@@ -1,0 +1,14 @@
+__pycache__
+*/__pycache__*/
+
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+*.wav
+.mid
+*.zip
+*.mid
+
+data_persisted/STFT/2048/activations/
+MAPS/
+data_persisted/
