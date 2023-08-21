@@ -1,26 +1,26 @@
 import numpy as np
 import os
-import transcription_functions as scr
-import sys
+import activation_functions as scr
 import time
 import STFT
 import evaluate_transcription as et
 import mir_eval
 import transcribe_factorization as tf
+import subprocess
 
 if __name__ == "__main__":
     # Parameters and paths
     pianos = ["AkPnCGdD", "ENSTDkCl", "AkPnBcht", "AkPnBsdf", "AkPnStgb", "ENSTDkAm", "SptkBGAm", "StbgTGd2"]
 
     path_root_maps = "../MAPS"
+    path_fluidsynth_exe = "C:/tools/fluidsynth/bin/fluidsynth.exe"
+    path_soundfont = "../soundfonts/yamaha_piano.sf2"
 
     piano_W = "AkPnBcht"
     piano_H = "AkPnBcht"
     stft_bins = 4096
     # song = "MAPS_MUS-bach_847_" + piano_H + ".wav"
     song = "MAPS_MUS-chpn_op66_AkPnBcht.wav"
-
-
 
     note_intensity = "M"
     beta = 1
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     itmax_W = 500
     init = "L1"
 
-    time_limit = 30
+    time_limit = 10
     itmax_H = 20
     tol = 1e-8
 
@@ -53,22 +53,28 @@ if __name__ == "__main__":
 
     for T in T_array:
         print(f"T: {T}")
-        W_persisted_name = "conv_dict_piano_{}_beta_{}_T_{}_init_{}_stftAD_{}_itmax_{}_intensity_{}".format(piano_W,
-                                                                                                            beta, T,
-                                                                                                            init,
-                                                                                                            True,
-                                                                                                            itmax_W,
-                                                                                                            note_intensity)
+        W_persisted_name = "conv_dict_piano_{}_beta_{}_T_{}_init_{}_stft_{}_itmax_{}_intensity_{}".format(piano_W,
+                                                                                                          beta, T,
+                                                                                                          init,
+                                                                                                          stft_bins,
+                                                                                                          itmax_W,
+                                                                                                          note_intensity)
         try:
             dict_W = np.load("{}/{}.npy".format(persisted_path, W_persisted_name))
+
+            if dict_W.shape[0] != T:
+                raise ValueError("Dictionary has the incorrect number of convolutional kernels")
+            if dict_W.shape[1] != stft_bins + 1:
+                raise ValueError("Dictionary has the incorrect number of frequency bins")
+
         except FileNotFoundError:
-            raise FileNotFoundError("Dictionary could not be found, to debug (probably a wrong T)")
+            raise FileNotFoundError("Dictionary could not be found")
 
         song_name = song.replace(".wav", "")
         print("processing piano song: {}".format(song_name))
         path_this_song = "{}/{}".format(path_songs, song)
-        H_to_persist_name = "activations_song_{}_W_learned_{}_beta_{}_T_{}_init_{}_stftAD_{}_itmax_{}_intensity_W_{}_time_limit_{}_tol_{}".format(
-            song_name, piano_W, beta, T, init, True, itmax_H, note_intensity, time_limit, tol)
+        H_to_persist_name = "activations_song_{}_W_learned_{}_beta_{}_T_{}_init_{}_stft_{}_itmax_{}_intensity_W_{}_time_limit_{}_tol_{}".format(
+            song_name, piano_W, beta, T, init, stft_bins, itmax_H, note_intensity, time_limit, tol)
 
         try:
             np.load("aaaaa.npy")
@@ -77,12 +83,10 @@ if __name__ == "__main__":
         except FileNotFoundError:
             time_start = time.time()
 
-
-
             H, n_iter, all_err = scr.semi_supervised_transcribe_cnmf(path_this_song, beta, itmax_H, tol, dict_W,
                                                                      time_limit=time_limit,
-                                                                     H0=None, plot=False, model_AD=True,
-                                                                     channel="Sum", num_bins=stft_bins)
+                                                                     H0=None, plot=False, channel="Sum",
+                                                                     num_bins=stft_bins)
             print("Time: {}".format(time.time() - time_start))
 
             np.save("{}/activations/{}".format(persisted_path, H_to_persist_name), H)
@@ -99,8 +103,8 @@ if __name__ == "__main__":
         ref_pitches = np.array(ref[:, 2], int)
 
         res_a_param = []
-        H_persisted_name = "activations_song_{}_W_learned_{}_beta_{}_T_{}_init_{}_stftAD_{}_itmax_{}_intensity_W_{}_time_limit_{}_tol_{}".format(
-            song_name, piano_W, beta, T, init, True, itmax_H, note_intensity, time_limit, tol)
+        H_persisted_name = "activations_song_{}_W_learned_{}_beta_{}_T_{}_init_{}_stft_{}_itmax_{}_intensity_W_{}_time_limit_{}_tol_{}".format(
+            song_name, piano_W, beta, T, init, stft_bins, itmax_H, note_intensity, time_limit, tol)
         H = np.load("{}/{}.npy".format("../data_persisted/STFT/" + str(stft_bins) + "/activations", H_persisted_name),
                     allow_pickle=True)
         all_res = []
@@ -109,11 +113,11 @@ if __name__ == "__main__":
         for threshold in listthres:
             prediction, midi_file_output = tf.transcribe_activations_dynamic(codebook, H, stft, threshold,
                                                                              H_normalization=False,
-                                                                             minimum_note_duration_scale=40)
+                                                                             minimum_note_duration_scale=5)
 
             est = np.array(prediction, float)
 
-            output_file_path = str(threshold) + '.mid'
+            output_file_path = "../transcriptions/" + str(round(threshold, 2)) + '.mid'
 
             # Save the MIDIFile object to the specified file path
             with open(output_file_path, 'wb') as output_file:
@@ -158,3 +162,15 @@ if __name__ == "__main__":
         print("TP: ", best_results[4])
         print("FP: ", best_results[5])
         print("FN: ", best_results[6])
+
+        # Define the paths you want to pass as parameters
+        path_to_best_song = "../transcriptions/" + str(round(listthres[f_score_max_index], 2)) + '.mid'
+
+        # Construct the command to run the executable with the paths as parameters
+        command = [path_fluidsynth_exe, path_soundfont, path_to_best_song]
+
+        # Use the subprocess module to run the command
+        try:
+            subprocess.run(command, check=True)
+        except subprocess.CalledProcessError as e:
+            print("An error occurred:", e)

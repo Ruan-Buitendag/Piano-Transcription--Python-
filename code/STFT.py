@@ -4,12 +4,13 @@ import numpy as np
 from scipy import signal
 import librosa as lr
 from numba import jit
+import matplotlib.pyplot as plt
 
 
 class STFT:
     """ A class containing the stft coefficients and important values related to the STFT of a signal, channelwise """
 
-    def __init__(self, path, time=None, channel='Sum', temporal_frame_size=64 / 1000, num_bins = 4096):
+    def __init__(self, path, time=None, channel='Sum', temporal_frame_size=64 / 1000, num_bins=4096, hop_length=882):
         """
         STFT of a temporal signal, given a path
 
@@ -52,14 +53,27 @@ class STFT:
         else:
             the_signal = the_signal[:, channel]
 
+        # Removing the zeros at the beginning of the signal
+        # counter = 0
+        # while the_signal[counter] == 0:
+        #     counter += 1
+        #
+        # the_signal = the_signal[counter+1:]
+
+        mel_spect = lr.feature.melspectrogram(y=the_signal, sr=sampling_rate_local, n_fft=num_bins * 2,
+                                              hop_length=hop_length)
+        # mel_spect = lr.power_to_db(mel_spect, ref=np.max)
+        lr.display.specshow(mel_spect, y_axis='mel', fmax=20000, x_axis='time');
+        plt.title('Mel Spectrogram');
+        plt.colorbar()
+        plt.show()
 
         frequencies, time_atoms, coeff = signal.stft(the_signal, fs=sampling_rate_local,
                                                      nperseg=num_bins,
-                                                     nfft=num_bins*2, noverlap=num_bins - 882)
-            # frequencies, time_atoms, coeff = signal.stft(the_signal, fs=sampling_rate_local,
-            #                                              nperseg=2048,
-            #                                              nfft=4096, noverlap=2048 - 882)
-
+                                                     nfft=num_bins * 2, noverlap=num_bins - hop_length)
+        # frequencies, time_atoms, coeff = signal.stft(the_signal, fs=sampling_rate_local,
+        #                                              nperseg=2048,
+        #                                              nfft=4096, noverlap=2048 - 882)
 
         # else:
         #     frequencies, time_atoms, coeff = signal.stft(the_signal, fs=sampling_rate_local,
@@ -154,8 +168,8 @@ class STFT:
         Returns:
             k (np.ndarray): Set of frequency indices
         """
-        lower = self.f_pitch(p - (0.5/bins_per_note), pitch_ref, freq_ref)
-        upper = self.f_pitch(p + (0.5/bins_per_note), pitch_ref, freq_ref)
+        lower = self.f_pitch(p - (0.5 / bins_per_note), pitch_ref, freq_ref)
+        upper = self.f_pitch(p + (0.5 / bins_per_note), pitch_ref, freq_ref)
         k = np.arange(N // 2 + 1)
         k_freq = k * Fs / N  # F_coef(k, Fs, N)
         mask = np.logical_and(lower <= k_freq, k_freq < upper)
@@ -180,8 +194,7 @@ class STFT:
         total_bins = bins_per_note * 128
         Y_LF = np.zeros((total_bins, Y.shape[1]))
         for p in range(21, total_bins):
-            k = self.pool_pitch(p/bins_per_note, Fs, Y.shape[0]*2)
+            k = self.pool_pitch(p / bins_per_note, Fs, Y.shape[0] * 2)
             Y_LF[p, :] = Y[k, :].sum(axis=0)
         F_coef_pitch = np.arange(total_bins)
         return Y_LF, F_coef_pitch
-

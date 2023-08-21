@@ -8,9 +8,9 @@ def beta_divergence(beta: float, x:np.array, y: np.array):
     d = np.zeros((nrow, ncol))
     for i in range(nrow):
         for j in range(ncol):
-            # if y[i,j]<1e-8:
+            if y[i,j]<1e-8:
                 # print('Warning')
-                # y[i,j] = 1e-8
+                y[i,j] = 1e-8
             if beta == 0:
                 d[i,j] = x[i,j]/y[i,j] - np.log(x[i,j]/y[i,j]) - 1
             elif beta == 1:

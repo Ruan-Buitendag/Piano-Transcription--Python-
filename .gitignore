@@ -12,3 +12,5 @@ __pycache__
 data_persisted/STFT/2048/activations/
 MAPS/
 data_persisted/
+
+soundfonts/

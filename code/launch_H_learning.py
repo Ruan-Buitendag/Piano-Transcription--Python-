@@ -5,7 +5,7 @@ Created on Mon Feb 22 19:12:07 2021
 """
 import numpy as np
 import os
-import transcription_functions as scr
+import activation_functions as scr
 import sys
 import time
 
