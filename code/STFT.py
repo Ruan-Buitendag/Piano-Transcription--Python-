@@ -61,12 +61,8 @@ class STFT:
         # the_signal = the_signal[counter+1:]
 
         mel_spect = lr.feature.melspectrogram(y=the_signal, sr=sampling_rate_local, n_fft=num_bins * 2,
-                                              hop_length=hop_length)
+                                              hop_length=hop_length, n_mels=1024)
         # mel_spect = lr.power_to_db(mel_spect, ref=np.max)
-        lr.display.specshow(mel_spect, y_axis='mel', fmax=20000, x_axis='time');
-        plt.title('Mel Spectrogram');
-        plt.colorbar()
-        # plt.show()
 
         frequencies, time_atoms, coeff = signal.stft(the_signal, fs=sampling_rate_local,
                                                      nperseg=num_bins,

@@ -46,9 +46,14 @@ def learning_W_and_persist(path, beta, T, itmax=500, rank=1, init="random", pian
             H = np.load("{}/tmp_W/{}.npy".format(persisted_path, persisted_name), allow_pickle = True)
             print("Found in loads")
         except FileNotFoundError:
+
             time_start = time.time()
-            stft = STFT.STFT(f)
-            mag = stft.get_magnitude_spectrogram()
+            stft = STFT.STFT(f, num_bins=num_points)
+
+            if spec_type == "stft":
+                mag = stft.get_magnitude_spectrogram()
+            elif spec_type == "mspec":
+                mag = stft.get_mel_spec()
 
             # we remove the column if all elements in that column < 1e-10
             columnlist = []

@@ -24,7 +24,6 @@ if __name__ == "__main__":
 
     # song = "MAPS_MUS-bach_847_" + piano_H + ".wav"
     song = "MAPS_MUS-chpn_op66_AkPnBcht.wav"
-
     note_intensity = "M"
     beta = 1
 
@@ -42,9 +41,11 @@ if __name__ == "__main__":
     itmax_W = 500
     init = "L1"
 
-    time_limit = 10
+    time_limit = 30
     itmax_H = 20
     tol = 1e-8
+
+    skip_top = 3500
 
     f = np.arange(1e-2, 4e-1, 1e-2)
     listthres = np.r_[f[::-1]]
@@ -61,11 +62,11 @@ if __name__ == "__main__":
     for T in T_array:
         print(f"T: {T}")
         W_persisted_name = "conv_dict_piano_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_{}".format(piano_W,
-                                                                                                          beta, T,
-                                                                                                          init, spec_type,
-                                                                                                          num_points,
-                                                                                                          itmax_W,
-                                                                                                          note_intensity)
+                                                                                                        beta, T,
+                                                                                                        init, spec_type,
+                                                                                                        num_points,
+                                                                                                        itmax_W,
+                                                                                                        note_intensity)
         try:
             dict_W = np.load("{}/{}.npy".format(persisted_path, W_persisted_name))
 
@@ -84,7 +85,7 @@ if __name__ == "__main__":
             song_name, piano_W, beta, T, init, spec_type, num_points, itmax_H, note_intensity, time_limit, tol)
 
         try:
-            np.load("aaaaa.npy")
+            # np.load("aaaaa.npy")
             np.load("{}/activations/{}.npy".format(persisted_path, H_to_persist_name), allow_pickle=True)
             print("Found in loads.")
         except FileNotFoundError:
@@ -93,7 +94,7 @@ if __name__ == "__main__":
             H, n_iter, all_err = scr.semi_supervised_transcribe_cnmf(path_this_song, beta, itmax_H, tol, dict_W,
                                                                      time_limit=time_limit,
                                                                      H0=None, plot=False, channel="Sum",
-                                                                     num_bins=num_points)
+                                                                     num_bins=num_points, skip_top=skip_top)
             print("Time: {}".format(time.time() - time_start))
 
             np.save("{}/activations/{}".format(persisted_path, H_to_persist_name), H)
@@ -112,15 +113,22 @@ if __name__ == "__main__":
         res_a_param = []
         H_persisted_name = "activations_song_{}_W_learned_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_W_{}_time_limit_{}_tol_{}".format(
             song_name, piano_W, beta, T, init, spec_type, num_points, itmax_H, note_intensity, time_limit, tol)
-        H = np.load("{}/{}.npy".format("../data_persisted/STFT/" + str(num_points) + "/activations", H_persisted_name),
+
+        if spec_type == "stft":
+            H_directory = "../data_persisted/STFT/"
+        elif spec_type == "mspec":
+            H_directory = "../data_persisted/MSPEC/"
+
+        H = np.load("{}/{}.npy".format(H_directory + str(num_points) + "/activations", H_persisted_name),
                     allow_pickle=True)
+
         all_res = []
 
         res_every_thresh = []
         for threshold in listthres:
             prediction, midi_file_output = tf.transcribe_activations_dynamic(codebook, H, stft, threshold,
                                                                              H_normalization=False,
-                                                                             minimum_note_duration_scale=5)
+                                                                             minimum_note_duration_scale=10)
 
             est = np.array(prediction, float)
 
@@ -130,7 +138,7 @@ if __name__ == "__main__":
             with open(output_file_path, 'wb') as output_file:
                 midi_file_output.writeFile(output_file)
 
-            print(f"MIDI file saved to {output_file_path}")
+            # print(f"MIDI file saved to {output_file_path}")
 
             if est.size > 0:
                 est_pitches = np.array(est[:, 2], int)
@@ -176,8 +184,9 @@ if __name__ == "__main__":
         # Construct the command to run the executable with the paths as parameters
         command = [path_fluidsynth_exe, path_soundfont, path_to_best_song]
 
-        # Use the subprocess module to run the command
         try:
-            subprocess.run(command, check=True)
+            # Start the process and connect to its stdin for sending input
+            process = subprocess.run(command)
+
         except subprocess.CalledProcessError as e:
             print("An error occurred:", e)
