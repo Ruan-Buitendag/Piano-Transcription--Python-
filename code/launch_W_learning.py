@@ -13,7 +13,12 @@ if __name__ == "__main__":
 
     pianos = ["AkPnBcht","AkPnBsdf","AkPnStgb","ENSTDkAm","SptkBGAm","StbgTGd2", "AkPnCGdD", "ENSTDkCl"]
 
-    piano = "AkPnBsdf"
+    piano = "AkPnBcht"
+
+    type = "stft"
+    # type = "mspec"
+
+    num_bins = 4096
 
     note_intensity = "M"
     itmax = 500
@@ -22,6 +27,6 @@ if __name__ == "__main__":
     beta = 1
 
     T = 10
-    _, _ = scr.learning_W_and_persist(path_piano_isol, beta, T, itmax=itmax, rank=1, init="L1", model_AD = True, piano_type = piano, note_intensity = note_intensity)
+    _, _ = scr.learning_W_and_persist(path_piano_isol, beta, T, itmax=itmax, rank=1, init="L1", piano_type = piano, note_intensity = note_intensity)
 
     print("Done")

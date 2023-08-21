@@ -18,7 +18,10 @@ if __name__ == "__main__":
 
     piano_W = "AkPnBcht"
     piano_H = "AkPnBcht"
-    stft_bins = 4096
+
+    spec_type = "stft"
+    num_points = 4096
+
     # song = "MAPS_MUS-bach_847_" + piano_H + ".wav"
     song = "MAPS_MUS-chpn_op66_AkPnBcht.wav"
 
@@ -30,7 +33,11 @@ if __name__ == "__main__":
     print(f"Piano templates learned on: {piano_W}")
 
     path_songs = "{}/{}/MUS".format(path_root_maps, piano_H)
-    persisted_path = "../data_persisted/STFT/" + str(stft_bins)
+
+    if spec_type == "stft":
+        persisted_path = "../data_persisted/STFT/" + str(num_points)
+    elif spec_type == "mspec":
+        persisted_path = "../data_persisted/MSPEC/" + str(num_points)
 
     itmax_W = 500
     init = "L1"
@@ -53,10 +60,10 @@ if __name__ == "__main__":
 
     for T in T_array:
         print(f"T: {T}")
-        W_persisted_name = "conv_dict_piano_{}_beta_{}_T_{}_init_{}_stft_{}_itmax_{}_intensity_{}".format(piano_W,
+        W_persisted_name = "conv_dict_piano_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_{}".format(piano_W,
                                                                                                           beta, T,
-                                                                                                          init,
-                                                                                                          stft_bins,
+                                                                                                          init, spec_type,
+                                                                                                          num_points,
                                                                                                           itmax_W,
                                                                                                           note_intensity)
         try:
@@ -64,7 +71,7 @@ if __name__ == "__main__":
 
             if dict_W.shape[0] != T:
                 raise ValueError("Dictionary has the incorrect number of convolutional kernels")
-            if dict_W.shape[1] != stft_bins + 1:
+            if dict_W.shape[1] != num_points + 1:
                 raise ValueError("Dictionary has the incorrect number of frequency bins")
 
         except FileNotFoundError:
@@ -73,8 +80,8 @@ if __name__ == "__main__":
         song_name = song.replace(".wav", "")
         print("processing piano song: {}".format(song_name))
         path_this_song = "{}/{}".format(path_songs, song)
-        H_to_persist_name = "activations_song_{}_W_learned_{}_beta_{}_T_{}_init_{}_stft_{}_itmax_{}_intensity_W_{}_time_limit_{}_tol_{}".format(
-            song_name, piano_W, beta, T, init, stft_bins, itmax_H, note_intensity, time_limit, tol)
+        H_to_persist_name = "activations_song_{}_W_learned_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_W_{}_time_limit_{}_tol_{}".format(
+            song_name, piano_W, beta, T, init, spec_type, num_points, itmax_H, note_intensity, time_limit, tol)
 
         try:
             np.load("aaaaa.npy")
@@ -86,7 +93,7 @@ if __name__ == "__main__":
             H, n_iter, all_err = scr.semi_supervised_transcribe_cnmf(path_this_song, beta, itmax_H, tol, dict_W,
                                                                      time_limit=time_limit,
                                                                      H0=None, plot=False, channel="Sum",
-                                                                     num_bins=stft_bins)
+                                                                     num_bins=num_points)
             print("Time: {}".format(time.time() - time_start))
 
             np.save("{}/activations/{}".format(persisted_path, H_to_persist_name), H)
@@ -94,7 +101,7 @@ if __name__ == "__main__":
         print("Done determining activation matrix.")
         print("Post processing activations.")
 
-        stft = STFT.STFT(path_this_song, time=time_limit, channel=0, num_bins=stft_bins)
+        stft = STFT.STFT(path_this_song, time=time_limit, channel=0, num_bins=num_points)
 
         annot_name = song.replace("wav", "txt")
         annot_this_song = "{}/{}".format(path_songs, annot_name)
@@ -103,9 +110,9 @@ if __name__ == "__main__":
         ref_pitches = np.array(ref[:, 2], int)
 
         res_a_param = []
-        H_persisted_name = "activations_song_{}_W_learned_{}_beta_{}_T_{}_init_{}_stft_{}_itmax_{}_intensity_W_{}_time_limit_{}_tol_{}".format(
-            song_name, piano_W, beta, T, init, stft_bins, itmax_H, note_intensity, time_limit, tol)
-        H = np.load("{}/{}.npy".format("../data_persisted/STFT/" + str(stft_bins) + "/activations", H_persisted_name),
+        H_persisted_name = "activations_song_{}_W_learned_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_W_{}_time_limit_{}_tol_{}".format(
+            song_name, piano_W, beta, T, init, spec_type, num_points, itmax_H, note_intensity, time_limit, tol)
+        H = np.load("{}/{}.npy".format("../data_persisted/STFT/" + str(num_points) + "/activations", H_persisted_name),
                     allow_pickle=True)
         all_res = []
 

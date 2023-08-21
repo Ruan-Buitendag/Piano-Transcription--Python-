@@ -6,9 +6,9 @@ import convolutive_MM as MM
 from numba import jit
 import STFT
 
-persisted_path = "../data_persisted/STFT/2048"
 
-def learning_W_and_persist(path, beta, T, itmax=500, rank=1, init="random", model_AD = True, piano_type = "ENSTDkCl", note_intensity = "F"):
+
+def learning_W_and_persist(path, beta, T, itmax=500, rank=1, init="random", piano_type = "ENSTDkCl", note_intensity = "F", spec_type = "stft", num_points = 4096):
     """
     Learning of note template using isolated note recording in MAPS
     ---------------
@@ -19,6 +19,11 @@ def learning_W_and_persist(path, beta, T, itmax=500, rank=1, init="random", mode
     :param rank: factorization rank
     :return: A note dictionary
     """
+    if spec_type == "stft":
+        persisted_path = "../data_persisted/STFT/" + str(num_points)
+    elif spec_type == "mspec":
+        persisted_path = "../data_persisted/MSPEC/" + str(num_points)
+
     files = os.listdir(path)
     list_files_wav = []
     for it_files in files:
@@ -35,14 +40,14 @@ def learning_W_and_persist(path, beta, T, itmax=500, rank=1, init="random", mode
         midi = re.search(r'(?<=M)\d+', name).group(0)
         print('MIDI: ', midi)
         try:
-            persisted_name = "W_one_note_piano_{}_beta_{}_T_{}_init_{}_stftAD_{}_itmax_{}_midi_{}_intensity_{}".format(piano_type, beta, T, init, model_AD, itmax, midi, note_intensity)
+            persisted_name = "W_one_note_piano_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_midi_{}_intensity_{}".format(piano_type, beta, T, init, spec_type, num_points, itmax, midi, note_intensity)
             W_mm = np.load("{}/tmp_W/{}.npy".format(persisted_path, persisted_name), allow_pickle = True)
             persisted_name = "H" + persisted_name[1:]
             H = np.load("{}/tmp_W/{}.npy".format(persisted_path, persisted_name), allow_pickle = True)
             print("Found in loads")
         except FileNotFoundError:
             time_start = time.time()
-            stft = STFT.STFT(f, model_AD=model_AD)
+            stft = STFT.STFT(f)
             mag = stft.get_magnitude_spectrogram()
 
             # we remove the column if all elements in that column < 1e-10
@@ -61,7 +66,7 @@ def learning_W_and_persist(path, beta, T, itmax=500, rank=1, init="random", mode
             [W_mm, H,_,all_err] = MM.convlutive_MM(mag, rank, itmax, beta, T, 1e-7, W0=W0, H0=H0)
 
             #Persist W_mm
-            persisted_name = "W_one_note_piano_{}_beta_{}_T_{}_init_{}_stftAD_{}_itmax_{}_midi_{}_intensity_{}".format(piano_type, beta, T, init, model_AD, itmax, midi, note_intensity)
+            persisted_name = "W_one_note_piano_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_midi_{}_intensity_{}".format(piano_type, beta, T, init, spec_type,num_points, itmax, midi, note_intensity)
             np.save("{}/tmp_W/{}".format(persisted_path, persisted_name), W_mm)
 
             H_persisted_name = "H" + persisted_name[1:]
@@ -80,10 +85,10 @@ def learning_W_and_persist(path, beta, T, itmax=500, rank=1, init="random", mode
     for i in range(88):
         max_value_h[i] = Dictionary_H[i + 21]
 
-    persisted_name = "conv_dict_piano_{}_beta_{}_T_{}_init_{}_stftAD_{}_itmax_{}_intensity_{}".format(piano_type, beta, T, init, model_AD, itmax, note_intensity)
+    persisted_name = "conv_dict_piano_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_{}".format(piano_type, beta, T, init, spec_type, num_points, itmax, note_intensity)
     np.save("{}/{}".format(persisted_path, persisted_name), mat_mm)
 
-    h_persisted_name = "max_value_h_piano_{}_beta_{}_T_{}_init_{}_stftAD_{}_itmax_{}_intensity_{}".format(piano_type, beta, T, init, model_AD, itmax, note_intensity)
+    h_persisted_name = "max_value_h_piano_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_{}".format(piano_type, beta, T, init, spec_type, num_points, itmax, note_intensity)
     np.save("{}/{}".format(persisted_path, h_persisted_name), max_value_h)
 
     return mat_mm, max_value_h

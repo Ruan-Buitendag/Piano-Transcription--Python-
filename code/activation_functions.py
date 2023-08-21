@@ -27,6 +27,7 @@ def semi_supervised_transcribe_cnmf(path, beta, itmax, tol, W_dict, time_limit=N
 
     stft = STFT.STFT(path, time=time_limit, channel=channel, num_bins=num_bins)
     X = stft.get_magnitude_spectrogram()
+    # X = stft.get_mel_spec()
 
     skip_top = 3000
 

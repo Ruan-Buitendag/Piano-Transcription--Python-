@@ -66,7 +66,7 @@ class STFT:
         lr.display.specshow(mel_spect, y_axis='mel', fmax=20000, x_axis='time');
         plt.title('Mel Spectrogram');
         plt.colorbar()
-        plt.show()
+        # plt.show()
 
         frequencies, time_atoms, coeff = signal.stft(the_signal, fs=sampling_rate_local,
                                                      nperseg=num_bins,
@@ -80,9 +80,12 @@ class STFT:
         #                                                  nperseg=int(sampling_rate_local * temporal_frame_size),
         #                                                  nfft=int(sampling_rate_local * temporal_frame_size))
         self.time_bins = time_atoms
-        self.freq_bins = frequencies
         self.sampling_rate = sampling_rate_local
         self.stft_coefficients = coeff
+        self.mel_spec = mel_spect
+
+    def get_mel_spec(self):
+        return self.mel_spec
 
     def get_magnitude_spectrogram(self, threshold=None):
         """
@@ -111,30 +114,6 @@ class STFT:
             # spec = np.where(spec < np.percentile(spec, 99), 0, spec) # Forcing saprsity by keeping only the highest values
 
             return spec
-
-    def get_power_spectrogram(self, threshold=None):
-        """
-        Computes the power spectrogram of the STFT
-
-        Parameters
-        ----------
-        self: the STFT
-
-        threshold: float
-            Threshold under which values will be set to zero, for denoizing
-
-        Returns
-        -------
-        spec: array
-            Power Spectrogram of the STFT: array of the squared magnitudes of the STFT complex coefficients
-        """
-
-        if threshold == None:
-            return np.abs(self.stft_coefficients) ** 2
-        else:
-            spec = np.abs(self.stft_coefficients) ** 2
-            spec_zero = spec[spec < threshold] = 0
-            return spec_zero
 
     # @jit(nopython=True)
     def f_pitch(self, p, pitch_ref=69, freq_ref=440.0):
