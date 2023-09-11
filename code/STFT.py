@@ -60,8 +60,12 @@ class STFT:
         #
         # the_signal = the_signal[counter+1:]
 
-        mel_spect = lr.feature.melspectrogram(y=the_signal, sr=sampling_rate_local, n_fft=num_bins * 2,
-                                              hop_length=hop_length, n_mels=1024)
+        mel_spect = None
+
+        the_signal = the_signal / np.max(the_signal)
+
+        # mel_spect = lr.feature.melspectrogram(y=the_signal, sr=sampling_rate_local, n_fft=num_bins * 2,
+        #                                       hop_length=hop_length, n_mels=1024)
         # mel_spect = lr.power_to_db(mel_spect, ref=np.max)
 
         frequencies, time_atoms, coeff = signal.stft(the_signal, fs=sampling_rate_local,
@@ -100,18 +104,28 @@ class STFT:
             Magnitude Spectrogram of the STFT: array of the magnitudes of the STFT complex coefficients
         """
 
-        if threshold == None:
-            return np.abs(self.stft_coefficients)
-        else:
-            spec = np.abs(self.stft_coefficients)
-            spec[spec < threshold] = 0
+        spec = np.abs(self.stft_coefficients)
+        mag_spec = spec / np.max(spec)
+        self.mag_spec = mag_spec
+        return mag_spec
 
-            # Other version, potentially helpful
-            # spec = np.where(spec < np.percentile(spec, 99), 0, spec) # Forcing saprsity by keeping only the highest values
+    def getDelayIndex(self):
+        column = 0
 
-            return spec
+        while np.all(self.mag_spec[:, column] < 0.05):
+            column += 1
 
-    # @jit(nopython=True)
+        return column
+
+    def getDelay(self):
+        column = 0
+
+        while np.all(self.mag_spec[:, column] < 0.05):
+            column += 1
+
+        delay = column * (self.time_bins[1]-self.time_bins[0])
+        return delay
+
     def f_pitch(self, p, pitch_ref=69, freq_ref=440.0):
         """Computes the center frequency/ies of a MIDI pitch
 

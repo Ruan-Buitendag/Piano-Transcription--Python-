@@ -1,6 +1,7 @@
 import numpy as np
 import beta_divergence as div
 from numba import jit
+# @jit(nopython=True)
 
 def convlutive_MM(X: np.array, r: int, itmax: int, beta: float, T: int, e: float, W0 = None, H0 = None):
     """
@@ -70,6 +71,7 @@ def convlutive_MM(X: np.array, r: int, itmax: int, beta: float, T: int, e: float
         # print("objective value: ", obj)
     return W, H, n_iter, all_err
 
+@jit(nopython=True)
 
 def shift(H, t):
     """

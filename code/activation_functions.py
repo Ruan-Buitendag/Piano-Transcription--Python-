@@ -33,6 +33,13 @@ def semi_supervised_transcribe_cnmf(path, beta, itmax, tol, W_dict, time_limit=N
         max_index_after_skip = W_dict.shape[1] - skip_top
 
         W_dict = W_dict[:, :max_index_after_skip, :]
+
+        # for note in range(W_dict.shape[2]):
+        # print(np.max(W_dict[:, :, note]))
+        # W_dict[:, :, note] /= np.max(W_dict[:, :, note])
+
+        W_dict = W_dict / np.max(W_dict)
+
         X = X[:max_index_after_skip, :]
     elif spec_type == "mspec":
         X = stft.get_mel_spec()
@@ -74,7 +81,6 @@ def compute_H(X: np.array, itmax: int, beta: float, e: float, W, H0=None):
     T = np.shape(W)[0]
 
     if H0 is None:
-        # we maybe try random initialization (or it can be absolute value of SVD)
         H = np.random.rand(r, ncol)
     else:
         H = np.copy(H0)
@@ -93,7 +99,7 @@ def compute_H(X: np.array, itmax: int, beta: float, e: float, W, H0=None):
     all_err = [err_int]
 
     denom_all_col = np.sum(np.dot(W[t].T, np.ones([W.shape[1], ncol])) for t in
-                           range(T))  # can be improved using np.sum twice and broadcasting, if we build BigW
+                           range(T))
 
     denoms_cropped_for_end = [None]
     for j in range(1, T + 1):
@@ -103,6 +109,9 @@ def compute_H(X: np.array, itmax: int, beta: float, e: float, W, H0=None):
     while n_iter < itmax:
         # update H
         A = np.sum(np.dot(W[t], MM.shift(H, t)) for t in range(T))
+
+        A[A == 0] = 1e-10
+
         X_hadamard_A = X * (A ** (beta - 2))
         X_hadamard_A_padded = np.concatenate((X_hadamard_A, np.zeros([W.shape[1], T])), axis=1)
 
@@ -118,7 +127,7 @@ def compute_H(X: np.array, itmax: int, beta: float, e: float, W, H0=None):
 
         obj = div.beta_divergence(beta, X, np.sum(np.dot(W[t], MM.shift(H, t)) for t in range(T)))
         all_err.append(obj)
-        print('cost function: ', obj)
+        # print('cost function: ', obj)
         # no need to update W
         # we track the relative error between two iterations
         if np.abs(obj - obj_previous) / err_int < e:

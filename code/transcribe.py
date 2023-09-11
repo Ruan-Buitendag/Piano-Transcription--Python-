@@ -8,6 +8,11 @@ import mir_eval
 import transcribe_factorization as tf
 import subprocess
 
+import domain_adaptation as da
+
+import single_note_eq_mask as eq
+import piano_type_detection as pt
+
 if __name__ == "__main__":
     # Parameters and paths
     pianos = ["AkPnCGdD", "ENSTDkCl", "AkPnBcht", "AkPnBsdf", "AkPnStgb", "ENSTDkAm", "SptkBGAm", "StbgTGd2"]
@@ -16,14 +21,35 @@ if __name__ == "__main__":
     path_fluidsynth_exe = "C:/tools/fluidsynth/bin/fluidsynth.exe"
     path_soundfont = "../soundfonts/yamaha_piano.sf2"
 
-    piano_W = "AkPnBcht"
-    piano_H = "AkPnBcht"
+    # piano_W = ["AkPnBsdf", "AkPnStgb", "AkPnBcht"]
+    piano_W = "AkPnBsdf"
+    piano_H = "AkPnCGdD"
+
+    midi_note_for_eq = "59"
+
+    # weights = [0.55147155, 0.44852845]
+    # weights = pt.CalculateTemplateWeights(midi_note_for_eq, piano_W, piano_H)
 
     spec_type = "stft"
     num_points = 4096
 
-    # song = "MAPS_MUS-bach_847_" + piano_H + ".wav"
-    song = "MAPS_MUS-chpn_op66_AkPnBcht.wav"
+    note_length = 20
+
+    specific_song = None
+    # specific_song = "MAPS_MUS-chpn-p4_AkPnBcht.wav"
+    # specific_song = "MAPS_MUS-chpn_op66_AkPnBcht.wav"
+    specific_song = "MAPS_MUS-alb_esp2_AkPnCGdD.wav"
+    note_length = 3
+    # specific_song =  "Freeze Noise.wav"
+
+    skip_top = 4096 - 2001
+    # skip_top = 0
+
+    time_limit = 32
+    itmax_H = 20
+
+    re_activate = True
+
     note_intensity = "M"
     beta = 1
 
@@ -41,13 +67,9 @@ if __name__ == "__main__":
     itmax_W = 500
     init = "L1"
 
-    time_limit = 30
-    itmax_H = 20
     tol = 1e-8
 
-    skip_top = 3500
-
-    f = np.arange(1e-2, 4e-1, 1e-2)
+    f = np.arange(0, 0.1, 0.001)
     listthres = np.r_[f[::-1]]
     codebook = range(21, 109)
 
@@ -59,33 +81,66 @@ if __name__ == "__main__":
         if it_files.split(".")[-1] == "wav":
             list_files_wav.append(it_files)
 
-    for T in T_array:
-        print(f"T: {T}")
-        W_persisted_name = "conv_dict_piano_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_{}".format(piano_W,
-                                                                                                        beta, T,
-                                                                                                        init, spec_type,
-                                                                                                        num_points,
-                                                                                                        itmax_W,
-                                                                                                        note_intensity)
-        try:
-            dict_W = np.load("{}/{}.npy".format(persisted_path, W_persisted_name))
+    if specific_song is not None:
+        list_files_wav = [specific_song]
 
-            if dict_W.shape[0] != T:
-                raise ValueError("Dictionary has the incorrect number of convolutional kernels")
-            if dict_W.shape[1] != num_points + 1:
-                raise ValueError("Dictionary has the incorrect number of frequency bins")
+    all_song_thresholds = []
 
-        except FileNotFoundError:
-            raise FileNotFoundError("Dictionary could not be found")
+    for song in list_files_wav:
+        if type(piano_W) == str:
+            W_persisted_name = "conv_dict_piano_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_{}".format(piano_W,
+                                                                                                            beta, 10,
+                                                                                                            init,
+                                                                                                            spec_type,
+                                                                                                            num_points,
+                                                                                                            itmax_W,
+                                                                                                            note_intensity)
+            try:
+                dict_W = np.load("{}/{}.npy".format(persisted_path, W_persisted_name))
+
+                if dict_W.shape[0] != 10:
+                    raise ValueError("Dictionary has the incorrect number of convolutional kernels")
+                if dict_W.shape[1] != num_points + 1:
+                    raise ValueError("Dictionary has the incorrect number of frequency bins")
+
+                dict_W = da.EQDictionary(dict_W, piano_H, piano_W)
+
+            except FileNotFoundError:
+                raise FileNotFoundError("Dictionary could not be found")
+
+        else:
+            list_dicts_W = []
+
+            for piano_W_it in piano_W:
+                W_persisted_name = "conv_dict_piano_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_{}".format(
+                    piano_W_it,
+                    beta, 10,
+                    init,
+                    spec_type,
+                    num_points,
+                    itmax_W,
+                    note_intensity)
+                list_dicts_W += [np.load("{}/{}.npy".format(persisted_path, W_persisted_name))]
+
+            dict_W = np.zeros(list_dicts_W[0].shape)
+            dicts_W = np.array(list_dicts_W)
+
+            for note in range(88):
+                weights = np.array(pt.CalculateTemplateWeights(str(note + 21), piano_W, piano_H))
+                weights = weights[:, np.newaxis, np.newaxis]
+
+                dict_W[:, :, note] = np.sum(dicts_W[:, :, :, note] * weights, axis=0)
 
         song_name = song.replace(".wav", "")
         print("processing piano song: {}".format(song_name))
         path_this_song = "{}/{}".format(path_songs, song)
-        H_to_persist_name = "activations_song_{}_W_learned_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_W_{}_time_limit_{}_tol_{}".format(
-            song_name, piano_W, beta, T, init, spec_type, num_points, itmax_H, note_intensity, time_limit, tol)
+        H_to_persist_name = "activations_song_{}_W_learned_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_W_{}_time_limit_{}_tol_{}_bins_skipped_{}".format(
+            song_name, piano_W, beta, 10, init, spec_type, num_points, itmax_H, note_intensity, time_limit, tol,
+            skip_top)
 
         try:
-            # np.load("aaaaa.npy")
+            if re_activate:
+                np.load("aaaaa.npy")
             np.load("{}/activations/{}.npy".format(persisted_path, H_to_persist_name), allow_pickle=True)
             print("Found in loads.")
         except FileNotFoundError:
@@ -103,16 +158,20 @@ if __name__ == "__main__":
         print("Post processing activations.")
 
         stft = STFT.STFT(path_this_song, time=time_limit, channel=0, num_bins=num_points)
+        aaa = stft.get_magnitude_spectrogram()
+
+        delay = stft.getDelay()
 
         annot_name = song.replace("wav", "txt")
         annot_this_song = "{}/{}".format(path_songs, annot_name)
-        note_annotations = et.load_ref_in_array(annot_this_song, time_limit=time_limit)
+        note_annotations = et.load_ref_in_array(annot_this_song, time_limit=time_limit - delay)
         ref = np.array(note_annotations, float)
         ref_pitches = np.array(ref[:, 2], int)
 
         res_a_param = []
-        H_persisted_name = "activations_song_{}_W_learned_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_W_{}_time_limit_{}_tol_{}".format(
-            song_name, piano_W, beta, T, init, spec_type, num_points, itmax_H, note_intensity, time_limit, tol)
+        H_persisted_name = "activations_song_{}_W_learned_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_W_{}_time_limit_{}_tol_{}_bins_skipped_{}".format(
+            song_name, piano_W, beta, 10, init, spec_type, num_points, itmax_H, note_intensity, time_limit, tol,
+            skip_top)
 
         if spec_type == "stft":
             H_directory = "../data_persisted/STFT/"
@@ -128,7 +187,7 @@ if __name__ == "__main__":
         for threshold in listthres:
             prediction, midi_file_output = tf.transcribe_activations_dynamic(codebook, H, stft, threshold,
                                                                              H_normalization=False,
-                                                                             minimum_note_duration_scale=10)
+                                                                             minimum_note_duration_scale=note_length)
 
             est = np.array(prediction, float)
 
@@ -141,12 +200,17 @@ if __name__ == "__main__":
             # print(f"MIDI file saved to {output_file_path}")
 
             if est.size > 0:
+                bu_est = np.copy(est)
+
+                est[:, :2] = est[:, :2] - np.min(est[:, 0])
+                ref[:, :2] = ref[:, :2] - np.min(ref[:, 0])
+
                 est_pitches = np.array(est[:, 2], int)
                 (prec, rec, f_mes, _) = mir_eval.transcription.precision_recall_f1_overlap(ref[:, 0:2], ref_pitches,
                                                                                            est[:, 0:2], est_pitches,
                                                                                            offset_ratio=None,
                                                                                            onset_tolerance=onset_tolerance)
-                matching = mir_eval.transcription.match_notes(ref[:, 0:2], ref_pitches, est[:, 0:2], est_pitches,
+                matching = mir_eval.transcription.match_notes(ref, ref_pitches, est, est_pitches,
                                                               onset_tolerance=onset_tolerance, offset_ratio=None)
                 TP = len(matching)
                 try:
@@ -178,15 +242,22 @@ if __name__ == "__main__":
         print("FP: ", best_results[5])
         print("FN: ", best_results[6])
 
+        all_song_thresholds += [listthres[f_score_max_index]]
+
         # Define the paths you want to pass as parameters
         path_to_best_song = "../transcriptions/" + str(round(listthres[f_score_max_index], 2)) + '.mid'
+        # path_to_best_song = "../transcriptions/0.08.mid"
 
         # Construct the command to run the executable with the paths as parameters
         command = [path_fluidsynth_exe, path_soundfont, path_to_best_song]
 
-        try:
-            # Start the process and connect to its stdin for sending input
-            process = subprocess.run(command)
+        if specific_song is not None:
+            try:
+                # Start the process and connect to its stdin for sending input
+                process = subprocess.run(command)
 
-        except subprocess.CalledProcessError as e:
-            print("An error occurred:", e)
+            except subprocess.CalledProcessError as e:
+                print("An error occurred:", e)
+
+    print("All song thresholds: ", all_song_thresholds)
+    print("Mean thresh: ", np.mean(all_song_thresholds))

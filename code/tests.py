@@ -1,10 +1,11 @@
 import numpy as np
 
-import STFT
+from scipy import signal
+import librosa as lr
+from matplotlib import pyplot as plt
 
-song = "C:/Users/ruanb/OneDrive/Desktop/Piano Transcripton/Piano transcription/MAPS/AkPnBcht/ISOL/NO/MAPS_ISOL_NO_F_S0_M23_AkPnBcht.wav"
+# make a 5x5 np array
 
-aaa = STFT.STFT(song)
-s = aaa.get_mel_spec()
+a = (np.arange(25)+1).reshape(5, 5).astype(np.float32)
 
-o = 0
+print(a ** -1)
