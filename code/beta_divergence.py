@@ -1,7 +1,7 @@
 import numpy as np
 from numba import jit
 
-# @jit(nopython=True)
+@jit(nopython=True)
 def beta_divergence(beta: float, x:np.array, y: np.array):
     nrow = np.shape(x)[0]
     ncol = np.shape(x)[1]

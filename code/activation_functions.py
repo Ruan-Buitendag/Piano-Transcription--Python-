@@ -81,7 +81,8 @@ def compute_H(X: np.array, itmax: int, beta: float, e: float, W, H0=None):
     T = np.shape(W)[0]
 
     if H0 is None:
-        H = np.random.rand(r, ncol)
+        # H = np.random.rand(r, ncol)
+        H = np.ones([r, ncol])
     else:
         H = np.copy(H0)
 
@@ -94,17 +95,31 @@ def compute_H(X: np.array, itmax: int, beta: float, e: float, W, H0=None):
         gamma = 1
 
     n_iter = 0
+
+    # bbbb = np.zeros([88, 10])
+    #
+    # for i in range(88):
+    #     for j in range(10):
+    #         bbbb[i, j] = i+j
+
+    # kkkkkk = np.sum(np.dot(W[t], MM.shift(bbbb, t)) for t in range(T))
+
     err_int = div.beta_divergence(beta, X, np.sum(np.dot(W[t], MM.shift(H, t)) for t in range(T)))
+    print('Initial cost function: ', err_int)
     obj_previous = 0
     all_err = [err_int]
 
     denom_all_col = np.sum(np.dot(W[t].T, np.ones([W.shape[1], ncol])) for t in
                            range(T))
 
-    denoms_cropped_for_end = [None]
+    denoms_cropped_for_end = []
     for j in range(1, T + 1):
-        tab = np.sum(np.dot(W[i].T, np.ones(W[i].shape[0])) for i in range(j))
+        # tab = np.sum(np.dot(W[i].T, np.ones(W[i].shape[0])) for i in range(j))
+        tab = np.sum(np.sum(W[i], axis=0) for i in range(j))
+
         denoms_cropped_for_end.append(tab)
+
+    hhhhhh = np.array([denoms_cropped_for_end])
 
     while n_iter < itmax:
         # update H
@@ -123,18 +138,26 @@ def compute_H(X: np.array, itmax: int, beta: float, e: float, W, H0=None):
         H[:, :ncol - T] = H[:, :ncol - T] * (num[:, :ncol - T] / denom_all_col[:, :ncol - T]) ** gamma
         # Special case for the end, when the denominator changes
         for n in range(ncol - T, ncol):
-            H[:, n] = H[:, n] * (num[:, n] / denoms_cropped_for_end[ncol - n]) ** gamma
+            H[:, n] = H[:, n] * (num[:, n] / denoms_cropped_for_end[ncol - n - 1]) ** gamma
 
         obj = div.beta_divergence(beta, X, np.sum(np.dot(W[t], MM.shift(H, t)) for t in range(T)))
+
+        print('cost function: ', obj)
+
         all_err.append(obj)
         # print('cost function: ', obj)
         # no need to update W
         # we track the relative error between two iterations
         if np.abs(obj - obj_previous) / err_int < e:
             print("Converged sufficiently")
-            break
+            # break
         obj_previous = obj
         # Counter incremented here
         n_iter = n_iter + 1
 
     return H, n_iter, all_err
+
+# a = (np.arange(25) + 1).reshape(5, 5).astype(np.float32)
+
+
+# print(compute_H(a, 10, 1, 1e-10, np.array([a, a, a, a, a])))

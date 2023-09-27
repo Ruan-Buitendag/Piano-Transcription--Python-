@@ -22,8 +22,8 @@ if __name__ == "__main__":
     path_soundfont = "../soundfonts/yamaha_piano.sf2"
 
     # piano_W = ["AkPnBsdf", "AkPnStgb", "AkPnBcht"]
-    piano_W = "AkPnBsdf"
-    piano_H = "AkPnCGdD"
+    piano_W = "AkPnBcht"
+    piano_H = "AkPnBcht"
 
     midi_note_for_eq = "59"
 
@@ -38,11 +38,12 @@ if __name__ == "__main__":
     specific_song = None
     # specific_song = "MAPS_MUS-chpn-p4_AkPnBcht.wav"
     # specific_song = "MAPS_MUS-chpn_op66_AkPnBcht.wav"
-    specific_song = "MAPS_MUS-alb_esp2_AkPnCGdD.wav"
+    # specific_song = "MAPS_MUS-alb_esp2_AkPnCGdD.wav"
+    specific_song = "MAPS_MUS-alb_se3_AkPnBcht.wav"
     note_length = 3
     # specific_song =  "Freeze Noise.wav"
 
-    skip_top = 4096 - 2001
+    skip_top = 4096 - 1499
     # skip_top = 0
 
     time_limit = 32
@@ -103,7 +104,7 @@ if __name__ == "__main__":
                 if dict_W.shape[1] != num_points + 1:
                     raise ValueError("Dictionary has the incorrect number of frequency bins")
 
-                dict_W = da.EQDictionary(dict_W, piano_H, piano_W)
+                # dict_W = da.EQDictionary(dict_W, piano_H, piano_W)
 
             except FileNotFoundError:
                 raise FileNotFoundError("Dictionary could not be found")
@@ -153,6 +154,8 @@ if __name__ == "__main__":
             print("Time: {}".format(time.time() - time_start))
 
             np.save("{}/activations/{}".format(persisted_path, H_to_persist_name), H)
+
+
 
         print("Done determining activation matrix.")
         print("Post processing activations.")
