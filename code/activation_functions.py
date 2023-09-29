@@ -81,8 +81,8 @@ def compute_H(X: np.array, itmax: int, beta: float, e: float, W, H0=None):
     T = np.shape(W)[0]
 
     if H0 is None:
-        # H = np.random.rand(r, ncol)
-        H = np.ones([r, ncol])
+        H = np.random.rand(r, ncol)
+        # H = np.ones([r, ncol])
     else:
         H = np.copy(H0)
 

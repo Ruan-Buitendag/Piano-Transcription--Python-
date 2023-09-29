@@ -9,9 +9,7 @@ import activation_functions as af
 import STFT
 
 
-import transcribe_factorization as tf
-
-tf.transcribe_activations_dynamic(0, 0, 0, 0)
+print(False * False)
 
 
 

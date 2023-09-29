@@ -43,7 +43,7 @@ class STFT:
         # For now, this function returns the stft of only one channel
         the_signal, sampling_rate_local = sf.read(path)
 
-        time = 1
+        # time = 1
 
         if time != None:
             the_signal = the_signal[0:time * sampling_rate_local, :]

@@ -8,6 +8,8 @@ import mir_eval
 import transcribe_factorization as tf
 import subprocess
 
+import myfmeasure
+
 import domain_adaptation as da
 
 import single_note_eq_mask as eq
@@ -49,7 +51,8 @@ if __name__ == "__main__":
     time_limit = 32
     itmax_H = 20
 
-    re_activate = True
+    # re_activate = True
+    re_activate = False
 
     note_intensity = "M"
     beta = 1
@@ -209,10 +212,13 @@ if __name__ == "__main__":
                 ref[:, :2] = ref[:, :2] - np.min(ref[:, 0])
 
                 est_pitches = np.array(est[:, 2], int)
-                (prec, rec, f_mes, _) = mir_eval.transcription.precision_recall_f1_overlap(ref[:, 0:2], ref_pitches,
-                                                                                           est[:, 0:2], est_pitches,
-                                                                                           offset_ratio=None,
-                                                                                           onset_tolerance=onset_tolerance)
+                # (prec, rec, f_mes, _) = mir_eval.transcription.precision_recall_f1_overlap(ref[:, 0:2], ref_pitches,
+                #                                                                            est[:, 0:2], est_pitches,
+                #                                                                            offset_ratio=None,
+                #                                                                            onset_tolerance=onset_tolerance)
+
+                (prec, rec, f_mes) = myfmeasure.stats(ref[:, 0:2], ref_pitches, est_pitches, est[:, 0:2])
+
                 matching = mir_eval.transcription.match_notes(ref, ref_pitches, est, est_pitches,
                                                               onset_tolerance=onset_tolerance, offset_ratio=None)
                 TP = len(matching)

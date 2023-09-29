@@ -107,11 +107,11 @@ def transcribe_activations_dynamic(midi_codebook, H, stft, threshold, sliding_wi
     MIDI_file_output = MIDIFile(1)
     MIDI_file_output.addTempo(0, 0, 60)
 
-    H = np.zeros((88, 100))
-
-    for i in range(H.shape[0]):
-        for j in range(H.shape[1]):
-            H[i][j] = (i * j) % 100
+    # H = np.zeros((88, 100))
+    #
+    # for i in range(H.shape[0]):
+    #     for j in range(H.shape[1]):
+    #         H[i][j] = (i * j) % 100
 
     # smoothing activation matrix (moving average)
     activation = np.zeros(np.shape(H))
@@ -119,7 +119,6 @@ def transcribe_activations_dynamic(midi_codebook, H, stft, threshold, sliding_wi
         if i - sliding_window < 0 or i + sliding_window + 1 > np.shape(H)[1]:
             d = min(i, np.shape(H)[1] - i)
             activation[:, i] = np.mean(H[:, i - d:i + d + 1])
-            f = 0
         else:
             activation[:, i] = np.mean(H[:, i - sliding_window:i + sliding_window + 1], axis=1)
 

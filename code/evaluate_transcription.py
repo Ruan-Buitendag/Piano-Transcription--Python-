@@ -55,7 +55,6 @@ def compute_statistical_rates_on_files(ground_truth_path, prediction_path, time_
 
 
 def compute_statistical_rates_on_array(truth_notes_array, predicted_notes_array, onset_tolerance = 50/1000, verbose = False):
-
     predicted_notes = predicted_notes_array.copy()
     truth_notes = truth_notes_array.copy()
 
