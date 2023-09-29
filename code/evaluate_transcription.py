@@ -5,11 +5,13 @@ Created on Fri Mar  1 14:52:17 2019
 """
 
 import numpy as np
-#import mir_eval
+
+
+# import mir_eval
 
 ## NB: You should use mir_eval instead, which is the reference in the domain.
 
-def compute_statistical_rates_on_files(ground_truth_path, prediction_path, time_limit = None, onset_tolerance = 50/1000):
+def compute_statistical_rates_on_files(ground_truth_path, prediction_path, time_limit=None, onset_tolerance=50 / 1000):
     """
     Compare the found transcription_evaluation (in a file) to the ground truth (in a file)
     and returns the statistical outputs (True Positives, False Positives, False Negatives) of this transcription_evaluation.
@@ -42,19 +44,20 @@ def compute_statistical_rates_on_files(ground_truth_path, prediction_path, time_
     """
     pred_list = []
 
-    #with open(Constants.RESULTS_PATH + escaper + output_name + ".txt") as f:
+    # with open(Constants.RESULTS_PATH + escaper + output_name + ".txt") as f:
     with open(prediction_path) as f:
         pred_lines = f.readlines()[1:]
 
     for note in pred_lines:
-        pred_list.append((note.replace("\n","")).split("\t"))
+        pred_list.append((note.replace("\n", "")).split("\t"))
 
     truth_array = load_ref_in_array(ground_truth_path, time_limit)
 
-    return compute_statistical_rates_on_array(truth_array, pred_list, onset_tolerance = onset_tolerance)
+    return compute_statistical_rates_on_array(truth_array, pred_list, onset_tolerance=onset_tolerance)
 
 
-def compute_statistical_rates_on_array(truth_notes_array, predicted_notes_array, onset_tolerance = 50/1000, verbose = False):
+def compute_statistical_rates_on_array(truth_notes_array, predicted_notes_array, onset_tolerance=50 / 1000,
+                                       verbose=False):
     predicted_notes = predicted_notes_array.copy()
     truth_notes = truth_notes_array.copy()
 
@@ -65,35 +68,39 @@ def compute_statistical_rates_on_array(truth_notes_array, predicted_notes_array,
     pred_nb = len(predicted_notes)
     truth_nb = len(truth_notes)
 
-    while predicted_notes: # As it removes one element of the list at each iteration, the stop condition can be over the existence of the list
+    while predicted_notes:  # As it removes one element of the list at each iteration, the stop condition can be over the existence of the list
         pred_note = predicted_notes[0]
         a_detection = False
         for truth_note_index in range(len(truth_notes)):
             truth_note = truth_notes[truth_note_index]
             # Onset validation
-            if float(pred_note[0]) <= float(truth_note[0]) + onset_tolerance and float(pred_note[0]) >= float(truth_note[0]) - onset_tolerance:
+            if float(pred_note[0]) <= float(truth_note[0]) + onset_tolerance and float(pred_note[0]) >= float(
+                    truth_note[0]) - onset_tolerance:
                 # Pitch validation
                 if int(pred_note[2]) == int(truth_note[2]):
                     a_detection = True
                     true_positive_rate += 1
                     truth_notes.pop(truth_note_index)
                     break
-        if not a_detection: # Note hasn't been found in the ground truth
+        if not a_detection:  # Note hasn't been found in the ground truth
             false_positive_rate += 1
         predicted_notes.pop(0)
 
     false_negative_rate = len(truth_notes)
 
     # Raise an error if the number of evaluated notes (correct or incorrect) is false
-    if 2*true_positive_rate + false_negative_rate + false_positive_rate != pred_nb + truth_nb:
+    if 2 * true_positive_rate + false_negative_rate + false_positive_rate != pred_nb + truth_nb:
         raise Exception("Incorrect number of note parsing")
 
     if verbose:
-        print(str(truth_nb) + " notes in the reference, " + str(pred_nb) + " found in the transcription_evaluation:\n TP: " + str(true_positive_rate) + ", FN: " + str(false_positive_rate) + ", FP: " + str(false_negative_rate))
+        print(str(truth_nb) + " notes in the reference, " + str(
+            pred_nb) + " found in the transcription_evaluation:\n TP: " + str(true_positive_rate) + ", FN: " + str(
+            false_positive_rate) + ", FP: " + str(false_negative_rate))
 
     return true_positive_rate, false_positive_rate, false_negative_rate
 
-def load_ref_in_array(ref_path, time_limit = None):
+
+def load_ref_in_array(ref_path, time_limit=None):
     """
     Load the ground truth transcription_evaluation in an array, for comparing it to the found transcription_evaluation in 'compute_statistical_rates_on_array()'
     The reference needs to be a txt, and format as in MAPS (which is the dataset for which this function has been developed)
@@ -114,20 +121,21 @@ def load_ref_in_array(ref_path, time_limit = None):
     truth_array = []
 
     with open(ref_path) as f:
-        truth_lines = f.readlines()[1:] # To discard the title/legend in ground truth
+        truth_lines = f.readlines()[1:]  # To discard the title/legend in ground truth
 
     for lines_index in range(len(truth_lines)):
         # Creates a list with the line of the reference, splitted on tabulations
         if truth_lines[lines_index] != '\n':
             line_to_array = (truth_lines[lines_index].replace("\n", "")).split("\t")
-            if (time_limit != None) and (float(line_to_array[0]) > time_limit): # if onset > time_limit (note outside of the cropped excerpt)
+            if (time_limit != None) and (float(
+                    line_to_array[0]) > time_limit):  # if onset > time_limit (note outside of the cropped excerpt)
                 truth_lines = truth_lines[:lines_index]
                 break
             else:
                 truth_array.append(line_to_array)
 
-
     return truth_array
+
 
 def precision(TP, FP):
     """
@@ -148,9 +156,10 @@ def precision(TP, FP):
         The precision
     """
     try:
-        return TP/(TP + FP)
+        return TP / (TP + FP)
     except ZeroDivisionError:
         return 0
+
 
 def recall(TP, FN):
     """
@@ -171,9 +180,10 @@ def recall(TP, FN):
         The Recall
     """
     try:
-        return TP/(TP + FN)
+        return TP / (TP + FN)
     except ZeroDivisionError:
         return 0
+
 
 def accuracy(TP, FP, FN):
     """
@@ -196,9 +206,10 @@ def accuracy(TP, FP, FN):
         The Accuracy
     """
     try:
-        return TP/(TP + FP + FN)
+        return TP / (TP + FP + FN)
     except ZeroDivisionError:
         return 0
+
 
 def F_measure(precision, recall):
     """
@@ -219,9 +230,10 @@ def F_measure(precision, recall):
         The F-measure of this transcription_evaluation
     """
     try:
-        return (2*precision*recall)/(precision + recall)
+        return (2 * precision * recall) / (precision + recall)
     except ZeroDivisionError:
         return 0
+
 
 # A function encapsulating the usual function to calculate the scores in MIREX/papers
 ### Frequencies need to be in Hz !!!
@@ -235,6 +247,7 @@ def F_measure(precision, recall):
 
     (prec, rec, f_mes, useless) = mir_eval.transcription_evaluation.precision_recall_f1_overlap(ref[:,0:2], ref_pitches, est[:,0:2], est_pitches, offset_ratio = None, pitch_tolerance = pitch_tol)
     return prec, rec, f_mes"""
+
 
 def print_results(TP, FP, FN):
     """
@@ -254,7 +267,7 @@ def print_results(TP, FP, FN):
     print("------ Transcription scores -------")
     print("True Positive count: " + str(TP) + " (accurate notes)")
     print("False Positive count: " + str(FP) + " (detected notes but not in the reference)")
-    print("False Negative count: " + str(FN)+ " (notes from the reference but undetected)")
+    print("False Negative count: " + str(FN) + " (notes from the reference but undetected)")
     print("-----------------------------------")
     prec = precision(TP, FP)
     rec = recall(TP, FN)

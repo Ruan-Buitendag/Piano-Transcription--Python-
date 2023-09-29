@@ -42,17 +42,17 @@ def matching(ref_intervals, ref_pitches, est_pitches, est_intervals, pitch_toler
 
     # bg = BipartiteGraph(len(hits[0]), len(hits[1]))
 
-    bg = BipartiteGraph(1000, 1000)
-
-    for ref_i, est_i in zip(*hits):
-        bg.add_edge(ref_i, est_i)
+    # bg = BipartiteGraph(1000, 1000)
+    #
+    # for ref_i, est_i in zip(*hits):
+    #     bg.add_edge(ref_i, est_i)
 
     # Compute the maximum matching
     matched = sorted(bipartite_match(G).items())
 
-    aaaa = len(matched)
-
-    bbbb = bg.maximum_matching()
+    # aaaa = len(matched)
+    #
+    # bbbb = bg.maximum_matching()
 
     return matched
 

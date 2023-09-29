@@ -48,7 +48,7 @@ if __name__ == "__main__":
     skip_top = 4096 - 1499
     # skip_top = 0
 
-    time_limit = 32
+    time_limit = 5
     itmax_H = 20
 
     # re_activate = True
@@ -190,7 +190,8 @@ if __name__ == "__main__":
         all_res = []
 
         res_every_thresh = []
-        for threshold in listthres:
+        for threshold in [0.05]:
+        # for threshold in listthres:
             prediction, midi_file_output = tf.transcribe_activations_dynamic(codebook, H, stft, threshold,
                                                                              H_normalization=False,
                                                                              minimum_note_duration_scale=note_length)
@@ -247,6 +248,8 @@ if __name__ == "__main__":
         print("Best threshold: ", listthres[f_score_max_index])
         print("F-score: ", best_results[2])
         print("Accuracy: ", best_results[3])
+        print("Precision: ", best_results[0])
+        print("Recall: ", best_results[1])
         print("TP: ", best_results[4])
         print("FP: ", best_results[5])
         print("FN: ", best_results[6])
