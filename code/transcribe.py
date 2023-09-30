@@ -64,18 +64,18 @@ if __name__ == "__main__":
     # specific_song = "MAPS_MUS-chpn-p4_AkPnBcht.wav"
     # specific_song = "MAPS_MUS-chpn_op66_AkPnBcht.wav"
     # specific_song = "MAPS_MUS-alb_esp2_AkPnCGdD.wav"
-    # specific_song = "MAPS_MUS-alb_se3_AkPnBcht.wav"
+    specific_song = "MAPS_MUS-alb_se3_AkPnBcht.wav"
     note_length = 3
     # specific_song =  "Freeze Noise.wav"
 
     skip_top = 4096 - 1499
     # skip_top = 0
 
-    time_limit = 10
+    time_limit = 6
     itmax_H = 20
 
-    # re_activate = True
-    re_activate = False
+    re_activate = True
+    # re_activate = False
 
     note_intensity = "M"
     beta = 1
@@ -194,6 +194,7 @@ if __name__ == "__main__":
         annot_name = song.replace("wav", "txt")
         annot_this_song = "{}/{}".format(path_songs, annot_name)
         note_annotations = et.load_ref_in_array(annot_this_song, time_limit=time_limit - delay)
+        # note_annotations = et.load_ref_in_array(annot_this_song, time_limit=time_limit)
         ref = np.array(note_annotations, float)
         ref_pitches = np.array(ref[:, 2], int)
 
@@ -209,6 +210,12 @@ if __name__ == "__main__":
 
         H = np.load("{}/{}.npy".format(H_directory + str(num_points) + "/activations", H_persisted_name),
                     allow_pickle=True)
+
+        # Specify the file path where you want to save the CSV file
+        file_path = "H_to_test_F1calc.csv"
+
+        # Use np.savetxt() to save the NumPy array to a CSV file
+        np.savetxt(file_path, H, delimiter=',')
 
         # above_thresh =
         H_aaa = H[H > 0.01]
@@ -234,6 +241,8 @@ if __name__ == "__main__":
 
             est = np.array(prediction, float)
 
+            np.savetxt("est_to_test_F1calc.csv", est, delimiter=',')
+
             output_file_path = "../transcriptions/" + str(round(threshold, 2)) + '.mid'
 
             # Save the MIDIFile object to the specified file path
@@ -254,17 +263,17 @@ if __name__ == "__main__":
                 #                                                                            offset_ratio=None,
                 #                                                                            onset_tolerance=onset_tolerance)
 
-                (prec, rec, f_mes) = myfmeasure.stats(ref[:, 0:2], ref_pitches, est_pitches, est[:, 0:2])
+                (prec, rec, f_mes, TP) = myfmeasure.stats(ref[:, 0:2], ref_pitches, est_pitches, est[:, 0:2])
 
-                matching = mir_eval.transcription.match_notes(ref, ref_pitches, est, est_pitches,
-                                                              onset_tolerance=onset_tolerance, offset_ratio=None)
-                TP = len(matching)
+                # matching = mir_eval.transcription.match_notes(ref, ref_pitches, est, est_pitches,
+                #                                               onset_tolerance=onset_tolerance, offset_ratio=None)
+                # TP = len(matching)
                 try:
-                    FP = int(TP * (1 - prec) / prec)
+                    FP = round(TP * (1 - prec) / prec)
                 except ZeroDivisionError:
                     FP = 0
                 try:
-                    FN = int(TP * (1 - rec) / rec)
+                    FN = round(TP * (1 - rec) / rec)
                 except ZeroDivisionError:
                     FN = 0
                 acc = et.accuracy(TP, FP, FN)

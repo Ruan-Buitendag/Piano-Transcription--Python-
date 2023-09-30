@@ -123,6 +123,10 @@ def load_ref_in_array(ref_path, time_limit=None):
     with open(ref_path) as f:
         truth_lines = f.readlines()[1:]  # To discard the title/legend in ground truth
 
+    delay = float(truth_lines[0].split("\t")[0])  # To discard the title/legend in ground truth
+
+    time_limit += delay
+
     for lines_index in range(len(truth_lines)):
         # Creates a list with the line of the reference, splitted on tabulations
         if truth_lines[lines_index] != '\n':

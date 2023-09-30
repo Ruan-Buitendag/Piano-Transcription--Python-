@@ -9,7 +9,7 @@ def stats(ref_intervals, ref_pitches, est_pitches, est_intervals):
     recall = float(len(matched)) / len(ref_pitches)
     f_measure = 2 * precision * recall / (precision + recall)
 
-    return precision, recall, f_measure
+    return precision, recall, f_measure, len(matched)
 
 
 def matching(ref_intervals, ref_pitches, est_pitches, est_intervals, pitch_tolerance=50, onset_tolerance=0.05, ):
