@@ -1,3 +1,5 @@
+import csv
+
 import numpy as np
 import os
 import activation_functions as scr
@@ -8,6 +10,9 @@ import mir_eval
 import transcribe_factorization as tf
 import subprocess
 
+#  y = 1.8223x + 0.6118
+
+
 import myfmeasure
 
 import domain_adaptation as da
@@ -16,6 +21,24 @@ import single_note_eq_mask as eq
 import piano_type_detection as pt
 
 if __name__ == "__main__":
+    # Specify the file path of the CSV file to delete
+    csv_file_path = 'treshold_data.csv'
+
+    # Check if the file exists before attempting to delete it
+    if os.path.exists(csv_file_path):
+        os.remove(csv_file_path)
+        print(f'The file {csv_file_path} has been deleted.')
+    else:
+        print(f'The file {csv_file_path} does not exist.')
+
+    with(open('treshold_data.csv', 'a', newline='')) as csv_file:
+        # Create a CSV writer object
+        csv_writer = csv.writer(csv_file)
+
+        # Write the header to the CSV file
+        csv_writer.writerow(
+            ['Threshold', 'Mean', 'Max', 'Median', 'Variance', 'Number above mean', 'Number above median'])
+
     # Parameters and paths
     pianos = ["AkPnCGdD", "ENSTDkCl", "AkPnBcht", "AkPnBsdf", "AkPnStgb", "ENSTDkAm", "SptkBGAm", "StbgTGd2"]
 
@@ -41,14 +64,14 @@ if __name__ == "__main__":
     # specific_song = "MAPS_MUS-chpn-p4_AkPnBcht.wav"
     # specific_song = "MAPS_MUS-chpn_op66_AkPnBcht.wav"
     # specific_song = "MAPS_MUS-alb_esp2_AkPnCGdD.wav"
-    specific_song = "MAPS_MUS-alb_se3_AkPnBcht.wav"
+    # specific_song = "MAPS_MUS-alb_se3_AkPnBcht.wav"
     note_length = 3
     # specific_song =  "Freeze Noise.wav"
 
     skip_top = 4096 - 1499
     # skip_top = 0
 
-    time_limit = 5
+    time_limit = 10
     itmax_H = 20
 
     # re_activate = True
@@ -73,8 +96,9 @@ if __name__ == "__main__":
 
     tol = 1e-8
 
-    f = np.arange(0, 0.1, 0.001)
+    f = np.arange(0, 0.5, 0.01)
     listthres = np.r_[f[::-1]]
+    # listthres = [0.1]
     codebook = range(21, 109)
 
     onset_tolerance = 0.05
@@ -89,6 +113,7 @@ if __name__ == "__main__":
         list_files_wav = [specific_song]
 
     all_song_thresholds = []
+    all_song_f_scores = []
 
     for song in list_files_wav:
         if type(piano_W) == str:
@@ -158,8 +183,6 @@ if __name__ == "__main__":
 
             np.save("{}/activations/{}".format(persisted_path, H_to_persist_name), H)
 
-
-
         print("Done determining activation matrix.")
         print("Post processing activations.")
 
@@ -187,11 +210,24 @@ if __name__ == "__main__":
         H = np.load("{}/{}.npy".format(H_directory + str(num_points) + "/activations", H_persisted_name),
                     allow_pickle=True)
 
+        # above_thresh =
+        H_aaa = H[H > 0.01]
+
+        H_mean = np.mean(H_aaa)
+        H_max = np.max(H_aaa)
+        H_median = np.median(H_aaa)
+        H_var = np.var(H_aaa)
+        H_num_above_mean = np.sum(H_aaa > H_mean)
+        H_num_above_median = np.sum(H_aaa > H_median)
+
         all_res = []
 
         res_every_thresh = []
-        for threshold in [0.05]:
-        # for threshold in listthres:
+
+        listthres = [9.8125 * H_var + 0.0318]
+        # listthres = [0.1]
+
+        for threshold in listthres:
             prediction, midi_file_output = tf.transcribe_activations_dynamic(codebook, H, stft, threshold,
                                                                              H_normalization=False,
                                                                              minimum_note_duration_scale=note_length)
@@ -242,10 +278,11 @@ if __name__ == "__main__":
         threshold_results = np.array(all_res[0][0])
 
         f_score_max_index = threshold_results[:, 2].argmax()
+        best_thresh = listthres[f_score_max_index]
 
         best_results = threshold_results[f_score_max_index, :]
 
-        print("Best threshold: ", listthres[f_score_max_index])
+        print("Best threshold: ", best_thresh)
         print("F-score: ", best_results[2])
         print("Accuracy: ", best_results[3])
         print("Precision: ", best_results[0])
@@ -254,7 +291,15 @@ if __name__ == "__main__":
         print("FP: ", best_results[5])
         print("FN: ", best_results[6])
 
-        all_song_thresholds += [listthres[f_score_max_index]]
+        all_song_thresholds += [best_thresh]
+        all_song_f_scores += [best_results[2]]
+
+        with open('treshold_data.csv', 'a', newline='') as csv_file:
+            # Create a CSV writer object
+            csv_writer = csv.writer(csv_file)
+
+            # Write the data to the CSV file
+            csv_writer.writerow([best_thresh, H_mean, H_max, H_median, H_var, H_num_above_mean, H_num_above_median])
 
         # Define the paths you want to pass as parameters
         path_to_best_song = "../transcriptions/" + str(round(listthres[f_score_max_index], 2)) + '.mid'
@@ -273,3 +318,5 @@ if __name__ == "__main__":
 
     print("All song thresholds: ", all_song_thresholds)
     print("Mean thresh: ", np.mean(all_song_thresholds))
+    print("All song f-scores: ", all_song_f_scores)
+    print("Mean f-score: ", np.mean(all_song_f_scores))

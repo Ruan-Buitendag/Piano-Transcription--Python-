@@ -9,9 +9,7 @@ import activation_functions as af
 import STFT
 
 
-print(False * False)
-
-
+import csv
 
 
 a = 0
