@@ -6,6 +6,8 @@ import librosa as lr
 from numba import jit
 import matplotlib.pyplot as plt
 
+import stft_1st_principles
+
 
 class STFT:
     """ A class containing the stft coefficients and important values related to the STFT of a signal, channelwise """
@@ -75,6 +77,9 @@ class STFT:
         frequencies, time_atoms, coeff = signal.stft(the_signal, fs=sampling_rate_local,
                                                      nperseg=num_bins,
                                                      nfft=num_bins * 2, noverlap=num_bins - hop_length)
+
+        self.my_stft = stft_1st_principles.stft_basic_real(the_signal, 4096, 882, nfft=4096 * 2)
+
         # frequencies, time_atoms, coeff = signal.stft(the_signal, fs=sampling_rate_local,
         #                                              nperseg=2048,
         #                                              nfft=4096, noverlap=2048 - 882)
@@ -111,7 +116,10 @@ class STFT:
         spec = np.abs(self.stft_coefficients)
         mag_spec = spec / np.max(spec)
         self.mag_spec = mag_spec
-        return mag_spec
+
+
+        # return mag_spec
+        return self.my_stft
 
     def getDelayIndex(self):
         column = 0

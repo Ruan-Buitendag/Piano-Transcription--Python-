@@ -9,7 +9,7 @@ import STFT
 def stft_basic_real(x, window_length, H=8, only_positive_frequencies=False, fs=44100, nfft=4096, time_limit=10):
     sig = np.copy(x)
 
-    sig = sig[:time_limit * 44100]
+    # sig = sig[:time_limit * 44100]
 
     sig = np.append(np.zeros(window_length // 2), sig)
     sig = np.append(sig, np.zeros(window_length // 2))
