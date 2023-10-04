@@ -132,7 +132,8 @@ class STFT:
     def getDelay(self):
         column = 0
 
-        while np.all(self.mag_spec[:, column] < 0.05):
+        # while np.all(self.mag_spec[:, column] < 0.05):
+        while np.all(self.my_stft[:, column] < 0.05):
             column += 1
 
         delay = column * (self.time_bins[1]-self.time_bins[0])

@@ -36,7 +36,7 @@ def CalculateTemplateWeights(midi_note, template_pianos, piano_H):
     H, n_iter, all_err = scr.semi_supervised_transcribe_cnmf(path_this_song, 1, 50, 0.05, piano_templates,
                                                              time_limit=10,
                                                              H0=None, plot=False, channel="Sum",
-                                                             num_bins=4096, skip_top=0)
+                                                             num_bins=4096, skip_top=2000)
 
     means = np.mean(H, axis=1)
     means = means / np.sum(means)

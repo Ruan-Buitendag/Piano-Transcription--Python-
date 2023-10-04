@@ -30,6 +30,14 @@ def semi_supervised_transcribe_cnmf(path, beta, itmax, tol, W_dict, time_limit=N
     if spec_type == "stft":
         X = stft.get_magnitude_spectrogram()
 
+        aa = np.load("test.npy")
+
+        aa = aa
+
+        X = X - aa[:, np.newaxis]
+
+        X[X < 0] = 0.00000000001
+
         max_index_after_skip = W_dict.shape[1] - skip_top
 
         W_dict = W_dict[:, :max_index_after_skip, :]
@@ -81,8 +89,37 @@ def compute_H(X: np.array, itmax: int, beta: float, e: float, W, H0=None):
     T = np.shape(W)[0]
 
     if H0 is None:
-        H = np.random.rand(r, ncol)
+
+        def gaussian(x, y, amplitude, mean_x, mean_y, sigma_x, sigma_y):
+            exponent = -((x - mean_x) ** 2 / (2 * sigma_x ** 2) + (y - mean_y) ** 2 / (2 * sigma_y ** 2))
+            return amplitude * np.exp(exponent)
+
+        # Define the parameters for the 2D Gaussian
+        amplitude = 1.0  # Amplitude of the Gaussian
+        mean_x = 0.0  # Mean (center) along the x-axis
+        mean_y = 0.0  # Mean (center) along the y-axis
+        sigma_x = 1.0  # Standard deviation along the x-axis
+        sigma_y = 1.0  # Standard deviation along the y-axis
+
+        # Create a grid of x and y values
+        x = np.linspace(-5, 5, r)  # Adjust the range and resolution as needed
+        y = np.linspace(-5, 5, ncol)  # Adjust the range and resolution as needed
+
+        # Create a 2D matrix to store the Gaussian data
+        gaussian_matrix = np.zeros((len(x), len(y)))
+
+        # Calculate the Gaussian values and fill the matrix
+        for i in range(len(x)):
+            for j in range(len(y)):
+                gaussian_matrix[i, j] = gaussian(x[i], y[j], amplitude, mean_x, mean_y, sigma_x, sigma_y)
+
+        H = gaussian_matrix
+
+
         # H = np.ones([r, ncol])
+
+        # H = np.random.rand(r, ncol)
+
     else:
         H = np.copy(H0)
 

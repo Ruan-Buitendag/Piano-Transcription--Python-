@@ -7,7 +7,12 @@ def stats(ref_intervals, ref_pitches, est_pitches, est_intervals):
 
     precision = float(len(matched)) / len(est_pitches)
     recall = float(len(matched)) / len(ref_pitches)
-    f_measure = 2 * precision * recall / (precision + recall)
+
+    if precision + recall == 0:
+        f_measure = 0
+    else:
+        f_measure = 2 * precision * recall / (precision + recall)
+
 
     return precision, recall, f_measure, len(matched)
 

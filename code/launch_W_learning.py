@@ -5,7 +5,7 @@ if __name__ == "__main__":
 
     pianos = ["AkPnBcht", "AkPnBsdf", "AkPnStgb", "ENSTDkAm", "SptkBGAm", "StbgTGd2", "AkPnCGdD", "ENSTDkCl"]
 
-    piano = "AkPnBcht"
+    piano = "AkPnBsdf"
 
     type = "stft"
     # type = "mspec"

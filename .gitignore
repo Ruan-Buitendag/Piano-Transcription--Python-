@@ -16,3 +16,5 @@ data_persisted/
 soundfonts/
 
 code/treshold_data.csv
+
+*.csv

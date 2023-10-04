@@ -46,14 +46,12 @@ if __name__ == "__main__":
     path_fluidsynth_exe = "C:/tools/fluidsynth/bin/fluidsynth.exe"
     path_soundfont = "../soundfonts/yamaha_piano.sf2"
 
-    # piano_W = ["AkPnBsdf", "AkPnStgb", "AkPnBcht"]
+    # piano_W = ["AkPnBcht", "AkPnBsdf", "AkPnStgb"]
     piano_W = "AkPnBcht"
     piano_H = "AkPnBcht"
 
     midi_note_for_eq = "59"
-
-    # weights = [0.55147155, 0.44852845]
-    # weights = pt.CalculateTemplateWeights(midi_note_for_eq, piano_W, piano_H)
+    every_note = False
 
     spec_type = "stft"
     num_points = 4096
@@ -64,7 +62,7 @@ if __name__ == "__main__":
     # specific_song = "MAPS_MUS-chpn-p4_AkPnBcht.wav"
     # specific_song = "MAPS_MUS-chpn_op66_AkPnBcht.wav"
     # specific_song = "MAPS_MUS-alb_esp2_AkPnCGdD.wav"
-    specific_song = "MAPS_MUS-alb_se3_AkPnBcht.wav"
+    specific_song = "MAPS_MUS-alb_se3_AkPnBcht-bbbbb.wav"
     note_length = 3
     # specific_song =  "Freeze Noise.wav"
 
@@ -140,6 +138,10 @@ if __name__ == "__main__":
         else:
             list_dicts_W = []
 
+            weights = pt.CalculateTemplateWeights(midi_note_for_eq, piano_W, piano_H)
+            weights = np.pad(weights, (0, len(piano_W) - weights.shape[0]), 'constant', constant_values=0)
+            weights = weights[:, np.newaxis, np.newaxis]
+
             for piano_W_it in piano_W:
                 W_persisted_name = "conv_dict_piano_{}_beta_{}_T_{}_init_{}_{}_{}_itmax_{}_intensity_{}".format(
                     piano_W_it,
@@ -155,10 +157,13 @@ if __name__ == "__main__":
             dicts_W = np.array(list_dicts_W)
 
             for note in range(88):
-                weights = np.array(pt.CalculateTemplateWeights(str(note + 21), piano_W, piano_H))
-                weights = weights[:, np.newaxis, np.newaxis]
+                if every_note:
+                    weights = np.array(pt.CalculateTemplateWeights(str(note + 21), piano_W, piano_H))
 
-                dict_W[:, :, note] = np.sum(dicts_W[:, :, :, note] * weights, axis=0)
+                    weights = np.pad(weights, (0, len(piano_W) - weights.shape[0]), 'constant', constant_values=0)
+                    weights = weights[:, np.newaxis, np.newaxis]
+
+                dict_W[:, :, note] = np.sum(weights * dicts_W[:, :, :, note], axis=0)
 
         song_name = song.replace(".wav", "")
         print("processing piano song: {}".format(song_name))
@@ -191,7 +196,8 @@ if __name__ == "__main__":
 
         delay = stft.getDelay()
 
-        annot_name = song.replace("wav", "txt")
+        # annot_name = song.replace("wav", "txt")
+        annot_name = "MAPS_MUS-alb_se3_AkPnBcht.txt"
         annot_this_song = "{}/{}".format(path_songs, annot_name)
         note_annotations = et.load_ref_in_array(annot_this_song, time_limit=time_limit - delay)
         # note_annotations = et.load_ref_in_array(annot_this_song, time_limit=time_limit)

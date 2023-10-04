@@ -1,26 +1,28 @@
 import numpy as np
 
-import convolutive_MM as mm
+def gaussian(x, y, amplitude, mean_x, mean_y, sigma_x, sigma_y):
+    exponent = -((x - mean_x)**2 / (2 * sigma_x**2) + (y - mean_y)**2 / (2 * sigma_y**2))
+    return amplitude * np.exp(exponent)
 
-from scipy import signal
-import librosa as lr
-from matplotlib import pyplot as plt
-import activation_functions as af
-import STFT
+# Define the parameters for the 2D Gaussian
+amplitude = 1.0  # Amplitude of the Gaussian
+mean_x = 0.0     # Mean (center) along the x-axis
+mean_y = 0.0     # Mean (center) along the y-axis
+sigma_x = 1.0    # Standard deviation along the x-axis
+sigma_y = 1.0    # Standard deviation along the y-axis
 
+# Create a grid of x and y values
+x = np.linspace(-5, 5, 100)  # Adjust the range and resolution as needed
+y = np.linspace(-5, 5, 100)  # Adjust the range and resolution as needed
 
-import csv
+# Create a 2D matrix to store the Gaussian data
+gaussian_matrix = np.zeros((len(x), len(y)))
 
+# Calculate the Gaussian values and fill the matrix
+for i in range(len(x)):
+    for j in range(len(y)):
+        gaussian_matrix[i, j] = gaussian(x[i], y[j], amplitude, mean_x, mean_y, sigma_x, sigma_y)
 
-import numpy as np
-
-# Create a sample NumPy array
-data = np.array([range(125)]).reshape((5, 5, 5))
-
-# Specify the file path where you want to save the CSV file
-file_path = "data.csv"
-
-# Use np.savetxt() to save the NumPy array to a CSV file
-np.savetxt(file_path, data, delimiter=',', fmt="%.5f")
+# Now, the 'gaussian_matrix' contains the amplitude data of the 2D Gaussian
 
 a = 0
