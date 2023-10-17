@@ -3,7 +3,7 @@ import numpy as np
 
 def stats(ref_intervals, ref_pitches, est_pitches, est_intervals):
 
-    matched = matching(ref_intervals, ref_pitches, est_pitches, est_intervals)
+    matched = matching(ref_intervals, ref_pitches, est_pitches, est_intervals, pitch_tolerance=50, onset_tolerance=0.05,)
 
     precision = float(len(matched)) / len(est_pitches)
     recall = float(len(matched)) / len(ref_pitches)

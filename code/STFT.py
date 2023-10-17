@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 
 import stft_1st_principles
 
+# import fixhardwareeffects
+
 
 class STFT:
     """ A class containing the stft coefficients and important values related to the STFT of a signal, channelwise """
@@ -117,6 +119,9 @@ class STFT:
         mag_spec = spec / np.max(spec)
         self.mag_spec = mag_spec
 
+        # correctiveEQ = fixhardwareeffects.getEQCurveFromRecording()
+
+        # self.mag_spec = self.mag_spec - correctiveEQ[:, np.newaxis]
 
         # return mag_spec
         return self.my_stft

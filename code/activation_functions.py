@@ -7,6 +7,8 @@ import beta_divergence as div
 from numba import jit
 import STFT
 
+import fixhardwareeffects
+
 
 # @jit(nopython=True)
 def semi_supervised_transcribe_cnmf(path, beta, itmax, tol, W_dict, time_limit=None, H0=None, plot=False,
@@ -30,13 +32,25 @@ def semi_supervised_transcribe_cnmf(path, beta, itmax, tol, W_dict, time_limit=N
     if spec_type == "stft":
         X = stft.get_magnitude_spectrogram()
 
-        aa = np.load("test.npy")
+        # aa = np.load("test.npy")
+        # bb = np.load("penis.npy")
 
-        aa = aa
+        # X[:, 25:] = X[:, 25:] - aa[:, np.newaxis]
 
-        X = X - aa[:, np.newaxis]
+        # X[:, 50:] = X[:, 50:] + bb[:, np.newaxis]
 
-        X[X < 0] = 0.00000000001
+        # X[:, :] = fixhardwareeffects.getEQCurveFromSine()
+
+        # X[:, :] = X[:, :] - fixhardwareeffects.getEQCurveFromSine()[:, np.newaxis]/10
+        # X[:, :] = X[X > 0.01] - fixhardwareeffects.getEQCurveFromRecording()[:, np.newaxis]
+
+        # weights = fixhardwareeffects.getEQCurveFromRecording()*15
+        weights = fixhardwareeffects.getEQCurveFromSine()
+        # weights = np.ones(4097)
+
+        X *= weights[:, np.newaxis]
+
+        # X /= np.max(X)
 
         max_index_after_skip = W_dict.shape[1] - skip_top
 
@@ -67,6 +81,49 @@ def semi_supervised_transcribe_cnmf(path, beta, itmax, tol, W_dict, time_limit=N
     H, n_iter, all_err = compute_H(X, itmax, beta, tol, W=W_dict, H0=H0)
 
     print('Computation done')
+
+    return H, n_iter, all_err
+
+
+
+
+def semi_supervised_transcribe_cnmf_from_spec(spec, beta, itmax, tol, W_dict, time_limit=None, H0=None, plot=False,
+                                              model_AD=False, channel="Sum", num_bins=4096, spec_type="stft",
+                                              skip_top=3500):
+    """
+    find H of real piano piece by semi-supervised NMF
+    ----------------------------
+    :param path: path of the piano piece
+    :param beta: value of beta
+    :param itmax: the maximal iteration number allowed in the computation of H
+    :param tol: the maximal tolerance of relative error in the computation of H
+    :param W_dict: note dictionary W
+    :param time_limit: time limit
+    :param H0: initialization of H
+    :param plot: plot activation matrix H
+    :return: activation matrix H
+    """
+
+    X = spec
+
+    # we remove firstly the columns whose contents are less than 1e-10
+    columnlist = []
+    for i in range(np.shape(X)[1]):
+        if (X[:, i] < 1e-10).all():
+            X[:, i] = 1e-10 * np.ones(np.shape(X)[0])
+
+    # initialization of H using semi-supervised NMF of W(0)
+    if H0 is None:
+        # H0,_,_ = compute_H_nmf(X, itmax, beta, tol, W_dict[0,:,:])
+        # H0,_,_ = compute_H_nmf(X, 50, beta, tol, W_dict[0,:,:])
+
+        H0 = np.ones([W_dict.shape[2], X.shape[1]]) / 2
+
+        # print('Initialization is done')
+
+    H, n_iter, all_err = compute_H(X, itmax, beta, tol, W=W_dict, H0=H0)
+
+    # print('Computation done')
 
     return H, n_iter, all_err
 
@@ -102,8 +159,8 @@ def compute_H(X: np.array, itmax: int, beta: float, e: float, W, H0=None):
         sigma_y = 1.0  # Standard deviation along the y-axis
 
         # Create a grid of x and y values
-        x = np.linspace(-5, 5, r)  # Adjust the range and resolution as needed
-        y = np.linspace(-5, 5, ncol)  # Adjust the range and resolution as needed
+        x = np.linspace(-7, 7, r)  # Adjust the range and resolution as needed
+        y = np.linspace(-7, 7, ncol)  # Adjust the range and resolution as needed
 
         # Create a 2D matrix to store the Gaussian data
         gaussian_matrix = np.zeros((len(x), len(y)))
@@ -114,7 +171,6 @@ def compute_H(X: np.array, itmax: int, beta: float, e: float, W, H0=None):
                 gaussian_matrix[i, j] = gaussian(x[i], y[j], amplitude, mean_x, mean_y, sigma_x, sigma_y)
 
         H = gaussian_matrix
-
 
         # H = np.ones([r, ncol])
 
@@ -142,7 +198,7 @@ def compute_H(X: np.array, itmax: int, beta: float, e: float, W, H0=None):
     # kkkkkk = np.sum(np.dot(W[t], MM.shift(bbbb, t)) for t in range(T))
 
     err_int = div.beta_divergence(beta, X, np.sum(np.dot(W[t], MM.shift(H, t)) for t in range(T)))
-    print('Initial cost function: ', err_int)
+    # print('Initial cost function: ', err_int)
     obj_previous = 0
     all_err = [err_int]
 
@@ -179,15 +235,22 @@ def compute_H(X: np.array, itmax: int, beta: float, e: float, W, H0=None):
 
         obj = div.beta_divergence(beta, X, np.sum(np.dot(W[t], MM.shift(H, t)) for t in range(T)))
 
-        print('cost function: ', obj)
+        # print('cost function: ', obj)
 
         all_err.append(obj)
         # print('cost function: ', obj)
         # no need to update W
         # we track the relative error between two iterations
-        if np.abs(obj - obj_previous) / err_int < e:
-            print("Converged sufficiently")
-            # break
+        # if np.abs(obj - obj_previous) / err_int < e:
+        #     # print("Converged sufficiently")
+        #     # break
+        #     a = 0
+
+        # if np.abs(obj - obj_previous) > obj_previous:
+        #     print("Diverged")
+        #     break
+        #     a = 0
+
         obj_previous = obj
         # Counter incremented here
         n_iter = n_iter + 1

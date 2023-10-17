@@ -3,23 +3,31 @@ import learning_functions as scr
 if __name__ == "__main__":
     path_maps = "../MAPS"
 
-    pianos = ["AkPnBcht", "AkPnBsdf", "AkPnStgb", "ENSTDkAm", "SptkBGAm", "StbgTGd2", "AkPnCGdD", "ENSTDkCl"]
+    pianos = ["AkPnBcht", "AkPnBsdf", "AkPnStgb", "ENSTDkAm", "SptkBGAm", "StbgTGd2", "AkPnCGdD", "ENSTDkCl",
+              "SptkBGCl"]
 
-    piano = "AkPnBsdf"
+    # piano = "ENSTDkCl"
 
-    type = "stft"
-    # type = "mspec"
+    for piano in pianos:
 
-    num_bins = 4096
+        type = "stft"
+        # type = "mspec"
 
-    note_intensity = "M"
-    itmax = 500
-    path_piano_isol = "{}/{}/ISOL/NO/".format(path_maps, piano)
+        num_bins = 4096
 
-    beta = 1
+        note_intensity = "M"
+        itmax = 500
+        path_piano_isol = "{}/{}/ISOL/NO/".format(path_maps, piano)
 
-    T = 10
-    _, _ = scr.learning_W_and_persist(path_piano_isol, beta, T, itmax=itmax, rank=1, init="L1", piano_type=piano,
-                                      note_intensity=note_intensity, spec_type=type, num_points=num_bins)
+        beta = 1
 
-    print("Done")
+        T = 10
+
+        try:
+            scr.learning_W_and_persist(path_piano_isol, beta, T, itmax=itmax, rank=1, init="L1", piano_type=piano,
+                                       note_intensity=note_intensity, spec_type=type, num_points=num_bins)
+        except:
+            print("Error for piano {}".format(piano))
+            continue
+
+        print("Done")

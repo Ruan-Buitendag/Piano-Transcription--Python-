@@ -1,28 +1,42 @@
+import h5py
 import numpy as np
 
-def gaussian(x, y, amplitude, mean_x, mean_y, sigma_x, sigma_y):
-    exponent = -((x - mean_x)**2 / (2 * sigma_x**2) + (y - mean_y)**2 / (2 * sigma_y**2))
-    return amplitude * np.exp(exponent)
+import STFT
 
-# Define the parameters for the 2D Gaussian
-amplitude = 1.0  # Amplitude of the Gaussian
-mean_x = 0.0     # Mean (center) along the x-axis
-mean_y = 0.0     # Mean (center) along the y-axis
-sigma_x = 1.0    # Standard deviation along the x-axis
-sigma_y = 1.0    # Standard deviation along the y-axis
+import numpy
 
-# Create a grid of x and y values
-x = np.linspace(-5, 5, 100)  # Adjust the range and resolution as needed
-y = np.linspace(-5, 5, 100)  # Adjust the range and resolution as needed
+# aaa = STFT.STFT("MAPS_MUS-alb_se3_AkPnBcht.wav", 10, "Average")
+#
+# aa = aaa.getDelay()
+#
+# aaa = aaa.get_magnitude_spectrogram()[:, round(aa / 0.02):]
+#
+# bbb = STFT.STFT("MAPS_MUS-alb_se3_AkPnBsdf.wav", 10, "Average")
+#
+# bb = bbb.getDelay()
+#
+# bbb = bbb.get_magnitude_spectrogram()[:, round(bb / 0.02):]
+#
+# ccc = numpy.mean(bbb, axis=1) - numpy.mean(aaa, axis=1)
+#
+# np.save("penis", ccc)
+#
+# a = 0
 
-# Create a 2D matrix to store the Gaussian data
-gaussian_matrix = np.zeros((len(x), len(y)))
+fff = np.load("C:/Users/ruanb/OneDrive/Desktop/Piano Transcripton/Piano transcription/data_persisted/STFT/4096/tmp_W/W_one_note_piano_ENSTDkCl_midi_69.npy")
 
-# Calculate the Gaussian values and fill the matrix
-for i in range(len(x)):
-    for j in range(len(y)):
-        gaussian_matrix[i, j] = gaussian(x[i], y[j], amplitude, mean_x, mean_y, sigma_x, sigma_y)
+# read from hdf5 file
 
-# Now, the 'gaussian_matrix' contains the amplitude data of the 2D Gaussian
+filename = "C:/Users/ruanb/OneDrive/Desktop/Piano Transcripton/Piano Transcription (C)/data_persisted/single_notes/W_one_note_piano_ENSTDkCl_midi_69.h5"
 
-a = 0
+with h5py.File(filename, 'r') as f:
+    # List all the keys (groups/datasets) in the HDF5 file
+    print("Keys:", list(f.keys()))
+
+    # Access a dataset or group
+    dataset = f['dictionary']  # Replace 'dataset_name' with the name of your dataset
+
+    # Read data from the dataset
+    data = dataset[()]  # This loads the entire dataset into a NumPy array
+
+    a = 0

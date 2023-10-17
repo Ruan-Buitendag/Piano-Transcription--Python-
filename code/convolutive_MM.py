@@ -71,7 +71,7 @@ def convlutive_MM(X: np.array, r: int, itmax: int, beta: float, T: int, e: float
         # print("objective value: ", obj)
     return W, H, n_iter, all_err
 
-@jit(nopython=True)
+# @jit(nopython=True)
 
 def shift(H, t):
     """
