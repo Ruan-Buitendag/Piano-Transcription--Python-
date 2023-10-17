@@ -18,3 +18,5 @@ soundfonts/
 code/treshold_data.csv
 
 *.csv
+
+*.npy
