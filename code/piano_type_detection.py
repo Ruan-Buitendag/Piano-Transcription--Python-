@@ -102,8 +102,8 @@ def CalculateTemplateWeights_Blind(spec, template_pianos):
 
         H, n_iter, all_err = scr.semi_supervised_transcribe_cnmf_from_spec(note_spec, 1, 5, 0.05, piano_templates,
                                                                            time_limit=10,
-                                                                           H0=None, plot=False, channel="Sum",
-                                                                           num_bins=4096, skip_top=1000)
+                                                                           H0=None, plot=False, channel="Average",
+                                                                           num_bins=4096, skip_top=2000)
 
 
         means = np.mean(H, axis=1)
@@ -127,6 +127,90 @@ def CalculateTemplateWeights_Blind(spec, template_pianos):
     a = 7
 
     return means
+
+
+def CalculateTemplateWeights_Blind_with_time(spec, template_pianos):
+    diffs = np.diff(spec, 1, axis=1)
+
+    column_mask = (diffs > 0.2).any(axis=0)
+
+    first_column_with_condition = np.argmax(column_mask)
+
+    aaaaaaaaaaaaaa = []
+    jjjjjjjjjjjj = []
+
+    # for n in range(0, spec.shape[1] - 15, 5):
+    # for n in range(21, 90):
+    # for n in range(-5, 5):
+    for n in range(0,1):
+
+        piano_template_list = []
+
+        start = first_column_with_condition
+        end = start + 15
+
+        note_spec = spec[:, start:end]
+
+        bins_summed_over_time = np.mean(note_spec, axis=1)
+
+        fundamental_bin = np.argmax(bins_summed_over_time)
+
+        fund_frequency = fundamental_bin / 4096 * 22050
+
+        if fund_frequency <= 0:
+            continue
+
+        midi_note = str(hertz_to_midi(fund_frequency) + n)
+        # midi_note = str(n)
+
+        for filename in os.listdir(path_templates):
+            if filename.endswith('.npy'):  # Adjust the extension as needed
+                parts = filename.split('_')
+
+                if parts[0] != "W":
+                    continue
+
+                if parts[4] in template_pianos and parts[-1].split('.')[0] == midi_note:
+                    piano_template_list.append(np.load(os.path.join(path_templates, filename)))
+
+        piano_templates = np.array(piano_template_list)
+
+        if piano_templates.shape[0] == 0:
+            continue
+
+        piano_templates = np.swapaxes(piano_templates, 1, 2)
+        piano_templates = np.swapaxes(piano_templates, 0, 2)
+        piano_templates = np.squeeze(piano_templates, axis=3)
+
+        H, n_iter, all_err = scr.semi_supervised_transcribe_cnmf_from_spec(note_spec, 1, 5, 0.05, piano_templates,
+                                                                           time_limit=10,
+                                                                           H0=None, plot=False, channel="Average",
+                                                                           num_bins=4096, skip_top=2000)
+
+
+        means = H[:, :10]
+        # means = np.mean(H, axis=1)
+        means = means / np.sum(means)
+        # print("Means are: ", means)
+
+        # means = np.append(means, all_err[-1])
+
+        # aaaaaaaaaaaaaa.append(means)
+        # jjjjjjjjjjjj.append([means, start, end, midi_note, bin_from_midi(int(midi_note))])
+
+    # aaa = np.array(aaaaaaaaaaaaaa)
+
+    # bb = np.argmax(aaa)
+    # cc = np.unravel_index(bb, aaa.shape)
+    # means = aaa[cc[0], :]
+
+    # row = np.argmin(aaa[:, -1])
+    # means = aaa[row, :-1]
+
+    a = 7
+
+    return means
+
 
 
 def hertz_to_midi(frequency):

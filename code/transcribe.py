@@ -1,5 +1,7 @@
 import csv
 
+import GPy
+
 import numpy as np
 import os
 import activation_functions as scr
@@ -9,6 +11,7 @@ import evaluate_transcription as et
 import mir_eval
 import transcribe_factorization as tf
 import subprocess
+import convolutive_MM as MM
 
 #  y = 1.8223x + 0.6118
 
@@ -39,6 +42,8 @@ if __name__ == "__main__":
         csv_writer.writerow(
             ['Threshold', 'Mean', 'Max', 'Median', 'Variance', 'Number above mean', 'Number above median'])
 
+    # threshold_model = GPy.models.GPRegression.load_model("testmodel.zip")
+
     # Parameters and paths
     pianos = ["AkPnCGdD", "ENSTDkCl", "AkPnBcht", "AkPnBsdf", "AkPnStgb", "ENSTDkAm", "SptkBGAm", "StbgTGd2"]
 
@@ -46,13 +51,17 @@ if __name__ == "__main__":
     path_fluidsynth_exe = "C:/tools/fluidsynth/bin/fluidsynth.exe"
     path_soundfont = "../soundfonts/yamaha_piano.sf2"
 
-    piano_W = ["AkPnBcht", "AkPnBsdf", "AkPnCGdD", "AkPnStgb", "ENSTDkCl"]
+    piano_W = ["AkPnBcht", "AkPnBsdf", "AkPnCGdD", "AkPnStgb", "ENSTDkAm", "ENSTDkCl", "SptkBGAm", "StbgTGd2"]
+    #
+    piano_W = ["AkPnBcht", "AkPnBsdf", "AkPnCGdD", "AkPnStgb", "ENSTDkAm"]
+    #
+    # piano_W = ["AkPnBcht"]
 
-    # piano_W = "AkPnBsdf"
-    # piano_H = "SptkBGCl"
-    # pianos_H = ["AkPnBsdf", "AkPnCGdD", "AkPnBcht"]
-
+    # piano_W = "AkPnBcht"
+    # piano_H = "AkPnBcht"
     pianos_H = ["AkPnBcht"]
+
+    # pianos_H = ["AkPnBcht", "AkPnBsdf", "AkPnCGdD", "AkPnStgb", "ENSTDkAm", "ENSTDkCl", "SptkBGAm", "StbgTGd2"]
 
     midi_note_for_eq = "59"
     every_note = False
@@ -66,9 +75,10 @@ if __name__ == "__main__":
     # specific_song = "MAPS_MUS-chpn_op27_2_SptkBGCl.wav"
     # specific_song = "MAPS_MUS-bk_xmas2_SptkBGCl.wav"
     # specific_song = "MAPS_MUS-chpn-p4_AkPnBcht.wav"
-    # specific_song = "MAPS_MUS-chpn_op66_AkPnBcht.wav"
+    # specific_song = "MAPS_MUS-chpn_op66_AkPnBcht_NP.wav"
     # specific_song = "MAPS_MUS-alb_esp2_AkPnCGdD.wav"
-    specific_song = "MAPS_MUS-alb_se3_AkPnBcht-bbbbb.wav"
+    specific_song = "MAPS_MUS-alb_se3_AkPnBcht-1.wav"
+    # specific_song = "MAPS_MUS-alb_se3_AkPnBsdf.wav"
     # specific_song =  "Freeze Noise.wav"
     # specific_song = "aaaaaaaaaaaaaaaaaaa.wav"
 
@@ -79,7 +89,7 @@ if __name__ == "__main__":
     # skip_top = 0
 
     time_limit = 5
-    itmax_H = 20
+    itmax_H = 100
 
     re_activate = True
     # re_activate = False
@@ -93,7 +103,7 @@ if __name__ == "__main__":
 
         print(f"Piano templates learned on: {piano_W}")
 
-        path_songs = "{}/{}/MUS".format(path_root_maps, piano_H)
+        path_songs = "{}/{}/LIVE_MUS".format(path_root_maps, piano_H)
 
         if spec_type == "stft":
             persisted_path = "../data_persisted/STFT/" + str(num_points)
@@ -105,7 +115,7 @@ if __name__ == "__main__":
 
         tol = 1e-8
 
-        f = np.arange(0, 0.5, 0.01)
+        f = np.arange(0, 0.5, 0.001)
         listthres = np.r_[f[::-1]]
         # listthres = [0.1]
         codebook = range(21, 109)
@@ -125,6 +135,9 @@ if __name__ == "__main__":
         all_song_f_scores = []
 
         for song in list_files_wav:
+
+            if "-1" not in song:
+                continue
 
             song_name = song.replace(".wav", "")
             print("processing piano song: {}".format(song_name))
@@ -165,8 +178,12 @@ if __name__ == "__main__":
 
                 try:
                     weights = pt.CalculateTemplateWeights_Blind(aaa, piano_W)
-                # weights = pt.CalculateTemplateWeights(midi_note_for_eq, piano_W, piano_H)
+                    # weights = pt.CalculateTemplateWeights(midi_note_for_eq, piano_W, piano_H)
                     weights = np.pad(weights, (0, dicts_W.shape[0] - weights.shape[0]), 'constant', constant_values=0)
+
+                    # weights = pt.CalculateTemplateWeights_Blind_with_time(aaa, piano_W)
+
+                    # weights = np.pad(weights, (0, dicts_W.shape[0] - weights.shape[0]), 'constant', constant_values=0)
 
                 except:
                     print("Could not calculate weights for ", song_name)
@@ -175,13 +192,17 @@ if __name__ == "__main__":
                 print("weights: ", weights)
 
                 weights = weights[:, np.newaxis, np.newaxis]
+                # weights = weights[:, :, np.newaxis]
 
                 for note in range(88):
                     if every_note:
                         weights = np.array(pt.CalculateTemplateWeights(str(note + 21), piano_W, piano_H))
 
-                        weights = np.pad(weights, (0, dicts_W.shape[0] - weights.shape[0]), 'constant', constant_values=0)
+                        weights = np.pad(weights, (0, dicts_W.shape[0] - weights.shape[0]), 'constant',
+                                         constant_values=0)
+
                         weights = weights[:, np.newaxis, np.newaxis]
+                        # weights = weights[:, :, np.newaxis]
 
                     dict_W[:, :, note] = np.sum(weights * dicts_W[:, :, :, note], axis=0)
 
@@ -219,7 +240,7 @@ if __name__ == "__main__":
 
             delay = stft.getDelay()
 
-            annot_name = song.replace("wav", "txt")
+            annot_name = song.replace("-1.wav", ".txt")
             # annot_name = "MAPS_MUS-alb_se3_AkPnBcht.txt"
             annot_this_song = "{}/{}".format(path_songs, annot_name)
             note_annotations = et.load_ref_in_array(annot_this_song, time_limit=time_limit - delay)
@@ -254,8 +275,16 @@ if __name__ == "__main__":
             res_every_thresh = []
 
             # listthres = [9.8125 * H_var + 0.0318]
-            # listthres = [3.7774 * H_median - 0.0308]
+            # listthres = [3.7774 * H_median - 0.0308 -0.02]
             # listthres = [0.043]
+            #
+            # idddd = np.zeros((1, 2))
+            # idddd[:, 0] = H_var
+            # idddd[:, 1] = H_mean
+            #
+            # ddd = threshold_model.predict(idddd)[0][0][0]
+            #
+            # listthres = [ddd]
 
             for threshold in listthres:
                 prediction, midi_file_output = tf.transcribe_activations_dynamic(codebook, H, stft, threshold,
@@ -335,15 +364,15 @@ if __name__ == "__main__":
             path_to_best_song = "../transcriptions/" + str(round(listthres[f_score_max_index], 2)) + '.mid'
 
             # Construct the command to run the executable with the paths as parameters
-            command = [path_fluidsynth_exe, path_soundfont, path_to_best_song]
-
-            if specific_song is not None:
-                try:
-                    # Start the process and connect to its stdin for sending input
-                    process = subprocess.run(command)
-
-                except subprocess.CalledProcessError as e:
-                    print("An error occurred:", e)
+            # command = [path_fluidsynth_exe, path_soundfont, path_to_best_song]
+            #
+            # if specific_song is not None:
+            #     try:
+            #         # Start the process and connect to its stdin for sending input
+            #         process = subprocess.run(command)
+            #
+            #     except subprocess.CalledProcessError as e:
+            #         print("An error occurred:", e)
 
         print("All song thresholds: ", all_song_thresholds)
         print("Mean thresh: ", np.mean(all_song_thresholds))

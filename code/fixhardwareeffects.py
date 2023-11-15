@@ -4,6 +4,7 @@ import STFT
 
 import numpy
 
+import matplotlib.pyplot as plt
 
 def getEQCurveFromRecording():
     aaa = STFT.STFT("MAPS_MUS-alb_se3_AkPnBcht.wav", 5, "Average")
@@ -56,30 +57,41 @@ def getEQCurveFromSine():
     # a = 0
 
     aaa = STFT.STFT(
-        "C:/Users/ruanb/OneDrive/Desktop/Piano Transcripton/Piano transcription/MAPS/AkPnBcht/LIVE/sweep.wav", 5,
+        "C:/Users/ruanb/OneDrive/Desktop/Piano Transcripton/Piano transcription/MAPS/AkPnBcht/LIVE/sweep.wav", 30,
         "Average")
 
     aaa = aaa.get_magnitude_spectrogram()
 
     bbb = STFT.STFT(
         "C:/Users/ruanb/OneDrive/Desktop/Piano Transcripton/Piano transcription/MAPS/AkPnBcht/LIVE/Middle 3 loud aligned.wav",
-        5, "Average")
+        30, "Average")
 
     bbb = bbb.get_magnitude_spectrogram()
 
-    ccc = aaa-bbb
+    ccc = aaa[:, :655]-bbb
+    # ccc = aaa[:, :bbb.shape[1]] / bbb
 
     cccc = numpy.sum(ccc, axis=1)
 
-    d = cccc * 0.3 + 1
+    d = cccc * 0 + 1
 
     d /= np.max(d)
 
     # np.save("test", cccc)
+
+    # window_size = 50
+
+    # padded_array = np.pad(d, (window_size//2, window_size//2 -1), mode='edge')
+    #
+    # d = np.convolve(padded_array, np.ones(window_size) / window_size, mode='valid')
 
     a = 0
 
 
     return d
 
-# getEQCurveFromSine()
+# time = np.linspace(0, 22050, 4097)
+# plt.plot(getEQCurveFromSine())
+# plt.plot(np.convolve(getEQCurveFromSine(), np.ones(50) / 50, mode='valid'))
+# plt.show()
+

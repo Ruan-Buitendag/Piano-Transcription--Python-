@@ -3,8 +3,7 @@ import learning_functions as scr
 if __name__ == "__main__":
     path_maps = "../MAPS"
 
-    pianos = ["AkPnBcht", "AkPnBsdf", "AkPnStgb", "ENSTDkAm", "SptkBGAm", "StbgTGd2", "AkPnCGdD", "ENSTDkCl",
-              "SptkBGCl"]
+    pianos = ["AkPnBcht", "AkPnBsdf", "AkPnStgb", "ENSTDkAm", "SptkBGAm", "StbgTGd2", "AkPnCGdD", "ENSTDkCl"]
 
     # piano = "ENSTDkCl"
 

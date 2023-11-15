@@ -1,6 +1,8 @@
 import soundfile as sf
 import numpy as np
 
+import math
+
 from scipy import signal
 import librosa as lr
 from numba import jit
@@ -50,6 +52,8 @@ class STFT:
         # time = 1
 
         if time != None:
+
+            # if(time * sampling_rate_local > the_signal.shape[0]):
             the_signal = the_signal[0:time * sampling_rate_local, :]
 
         # the_signal = the_signal[0:44100, :]
@@ -80,7 +84,11 @@ class STFT:
                                                      nperseg=num_bins,
                                                      nfft=num_bins * 2, noverlap=num_bins - hop_length)
 
-        self.my_stft = stft_1st_principles.stft_basic_real(the_signal, 4096, 882, nfft=4096 * 2)
+
+        window_size = 0.02
+        window_size_samples = round(window_size * 44100)
+
+        self.my_stft = stft_1st_principles.stft_basic_real(the_signal, 4096, window_size_samples, nfft=4096 * 2)
 
         # frequencies, time_atoms, coeff = signal.stft(the_signal, fs=sampling_rate_local,
         #                                              nperseg=2048,
@@ -90,7 +98,20 @@ class STFT:
         #     frequencies, time_atoms, coeff = signal.stft(the_signal, fs=sampling_rate_local,
         #                                                  nperseg=int(sampling_rate_local * temporal_frame_size),
         #                                                  nfft=int(sampling_rate_local * temporal_frame_size))
-        self.time_bins = time_atoms
+
+        # reshaped_data = time_atoms.reshape(-1, 2)
+
+        # Sum the columns in pairs along axis 1
+        # result = np.sum(reshaped_data, axis=1)
+
+        # cols = math.ceil(time_atoms.shape[0] / 2)
+        #
+        # ass = np.zeros(cols)
+        #
+        # for i in range(cols-1):
+        #     ass[i] = (time_atoms[2*i] + time_atoms[2*i + 1])
+
+        self.time_bins = np.arange(0, self.my_stft.shape[1], 1) * window_size
         self.sampling_rate = sampling_rate_local
         self.stft_coefficients = coeff
         self.mel_spec = mel_spect
@@ -119,9 +140,25 @@ class STFT:
         mag_spec = spec / np.max(spec)
         self.mag_spec = mag_spec
 
+        # reshaped_data = self.my_stft.reshape(-1, 2)
+
+        # Sum the columns in pairs along axis 1
+        # result = np.sum(reshaped_data, axis=1)
+
+        # self.my_stft = result
+
         # correctiveEQ = fixhardwareeffects.getEQCurveFromRecording()
 
         # self.mag_spec = self.mag_spec - correctiveEQ[:, np.newaxis]
+
+        # cols = math.ceil(self.my_stft.shape[1]/2)
+        #
+        # ass = np.zeros((self.my_stft.shape[0], cols))
+        #
+        #
+        #
+        # for i in range(cols-1):
+        #     ass[:, i] = (self.my_stft[:, 2*i] + self.my_stft[:, 2*i+1])/2
 
         # return mag_spec
         return self.my_stft
@@ -141,7 +178,7 @@ class STFT:
         while np.all(self.my_stft[:, column] < 0.05):
             column += 1
 
-        delay = column * (self.time_bins[1]-self.time_bins[0])
+        delay = column * (self.time_bins[1]-self.time_bins[0])/2
         return delay
 
     def f_pitch(self, p, pitch_ref=69, freq_ref=440.0):

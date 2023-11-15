@@ -50,7 +50,7 @@ def semi_supervised_transcribe_cnmf(path, beta, itmax, tol, W_dict, time_limit=N
 
         X *= weights[:, np.newaxis]
 
-        # X /= np.max(X)
+        X /= np.max(X)
 
         max_index_after_skip = W_dict.shape[1] - skip_top
 

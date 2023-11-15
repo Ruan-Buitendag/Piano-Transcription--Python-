@@ -3,7 +3,7 @@
 Created on Fri Feb 22 16:40:58 2019
 
 """
-
+import matplotlib.pyplot as plt
 import numpy as np
 import math
 from scipy.signal import find_peaks
@@ -114,18 +114,73 @@ def transcribe_activations_dynamic(midi_codebook, H, stft, threshold, sliding_wi
     #         H[i][j] = (i * j) % 100
 
     # smoothing activation matrix (moving average)
+
+    # H = np.sqrt(H)
+    # H = H/np.max(H)
+
+    # timess = np.arange(0, H.shape[1]*0.02, 0.02)
+    # time = np.arange(0, H.shape[1])
+    #
+    # plt.pcolormesh(H, cmap='jet')
+    # plt.ylabel('Midi note number')
+    # plt.xlabel('Time (s)')
+
+    # plt.xticks(time, timess)
+    # plt.yticks(np.arange(0, 88, 1), np.arange(21, 109, 1))
+
+    # plt.show()
+
+    sliding_window = 3
+    sliding_window2 = 10
+
     activation = np.zeros(np.shape(H))
+    activation2 = np.zeros(np.shape(H))
+
     for i in range(0, np.shape(H)[1]):
+        # if i - sliding_window < 0 or i + sliding_window + 1 > np.shape(H)[1]:
+        #     d = min(i, np.shape(H)[1] - i)
+        #     activation[:, i] = np.mean(H[:, i - d:i + d + 1])
+        # else:
+        #     activation[:, i] = np.mean(H[:, i - sliding_window:i + sliding_window + 1], axis=1)
+
         if i - sliding_window < 0 or i + sliding_window + 1 > np.shape(H)[1]:
             d = min(i, np.shape(H)[1] - i)
             activation[:, i] = np.mean(H[:, i - d:i + d + 1])
+
+
         else:
-            activation[:, i] = np.mean(H[:, i - sliding_window:i + sliding_window + 1], axis=1)
+            activation[:, i] = np.mean(H[:, i - sliding_window:i + sliding_window + 1])
+
+    for i in range(0, np.shape(H)[1]):
+        # if i - sliding_window < 0 or i + sliding_window + 1 > np.shape(H)[1]:
+        #     d = min(i, np.shape(H)[1] - i)
+        #     activation[:, i] = np.mean(H[:, i - d:i + d + 1])
+        # else:
+        #     activation[:, i] = np.mean(H[:, i - sliding_window:i + sliding_window + 1], axis=1)
+
+        if i - sliding_window2 < 0 or i + sliding_window2 + 1 > np.shape(H)[1]:
+            d = min(i, np.shape(H)[1] - i)
+            activation2[:, i] = np.mean(H[:, i - d:i + d + 1])
+
+
+        else:
+            activation2[:, i] = np.mean(H[:, i - sliding_window2:i + sliding_window2 + 1], axis=1)
 
     if H_normalization:
         H_max = np.amax(activation)
     else:
         H_max = 1
+
+    # Hsss = H - activation2
+    # Hsss[Hsss < 0] = 0
+    #
+    # Hsss = np.sqrt(Hsss)
+    # Hsss = Hsss / np.max(Hsss)
+
+    # plt.pcolormesh(Hsss, cmap='jet')
+    # plt.ylabel('Midi note number')
+    # plt.xlabel('Time (s)')
+    # plt.show()
 
     for note_index in range(0, activation.shape[0]):  # Looping over the notes
         # Avoiding an uncontrolled situation (boolean to True before looking at this notes)
@@ -134,8 +189,7 @@ def transcribe_activations_dynamic(midi_codebook, H, stft, threshold, sliding_wi
 
         for time_index in range(activation[note_index].size):
             # Looking if the activation of the note is larger than its smooth value + threshold
-            minimalSustainCondition = (H[note_index, time_index] - activation[
-                note_index, time_index] > threshold * H_max)  # actived note
+            minimalSustainCondition = (H[note_index, time_index] - activation2[note_index, time_index] > threshold * H_max)  # actived note
 
             if minimalSustainCondition:  # note detected and sustained
                 if not presence_of_a_note:  # If the note hasn't been detected before

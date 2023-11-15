@@ -17,7 +17,7 @@ def stats(ref_intervals, ref_pitches, est_pitches, est_intervals):
     return precision, recall, f_measure, len(matched)
 
 
-def matching(ref_intervals, ref_pitches, est_pitches, est_intervals, pitch_tolerance=50, onset_tolerance=0.05, ):
+def matching(ref_intervals, ref_pitches, est_pitches, est_intervals, pitch_tolerance=50, onset_tolerance=0.5, ):
     onset_distances = np.abs(np.subtract.outer(ref_intervals[:, 0],
                                                est_intervals[:, 0]))
     # Round distances to a target precision to avoid the situation where
